@@ -1,0 +1,142 @@
+{
+  "schema": "flint-nsys/1",
+  "case": "nt-bias-8192x2304x768",
+  "command": "nsys profile --trace=cuda --sample=none --cpuctxsw=none -o <reports>/nt-bias-8192x2304x768 <flint_bench> gemm --quick --layout nt --epilogue bias --shapes 8192x2304x768 --out <reports>/nt-bias-8192x2304x768.bench.json",
+  "nsys_version": "2026.3.2.476-263238834031v0",
+  "csv_files": 1,
+  "smem_unit": {
+    "static_smem": "mb",
+    "dynamic_smem": "mb"
+  },
+  "groups": [
+    {
+      "side": "flint",
+      "name": "flint::<unnamed>::gemm_nt_bias(__half *, const __half *, const __half *, int, int, int, const float *)",
+      "count": 242,
+      "median_us": 654.666,
+      "min_us": 578.843,
+      "max_us": 671.673,
+      "total_us": 155889.335,
+      "grid": [
+        8,
+        18,
+        8
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "blocks": 1152,
+      "threads_per_block": 256,
+      "registers_per_thread": 127,
+      "static_smem": 0.02,
+      "dynamic_smem": 0.0
+    },
+    {
+      "side": "baseline",
+      "name": "turing_fp16_s1688gemm_fp16_128x128_ldg8_relu_f2f_tn",
+      "count": 520,
+      "median_us": 542.4585,
+      "min_us": 460.955,
+      "max_us": 555.355,
+      "total_us": 273953.971,
+      "grid": [
+        18,
+        64,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "blocks": 1152,
+      "threads_per_block": 128,
+      "registers_per_thread": 254,
+      "static_smem": 0.033,
+      "dynamic_smem": 0.0
+    },
+    {
+      "side": "baseline",
+      "name": "turing_fp16_s1688gemm_fp16_128x256_ldg8_relu_f2f_stages_32x1_tn",
+      "count": 111,
+      "median_us": 581.723,
+      "min_us": 576.891,
+      "max_us": 587.514,
+      "total_us": 64613.367,
+      "grid": [
+        18,
+        32,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "blocks": 576,
+      "threads_per_block": 256,
+      "registers_per_thread": 240,
+      "static_smem": 0.049,
+      "dynamic_smem": 0.016
+    },
+    {
+      "side": "baseline",
+      "name": "turing_fp16_s1688gemm_fp16_128x256_ldg8_relu_f2f_tn",
+      "count": 108,
+      "median_us": 595.4984999999999,
+      "min_us": 580.219,
+      "max_us": 602.714,
+      "total_us": 64033.117,
+      "grid": [
+        18,
+        32,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "blocks": 576,
+      "threads_per_block": 256,
+      "registers_per_thread": 240,
+      "static_smem": 0.049,
+      "dynamic_smem": 0.016
+    },
+    {
+      "side": "baseline",
+      "name": "turing_fp16_s1688gemm_fp16_128x128_ldg8_relu_f2f_stages_32x1_tn",
+      "count": 113,
+      "median_us": 544.027,
+      "min_us": 523.195,
+      "max_us": 556.027,
+      "total_us": 60739.549,
+      "grid": [
+        18,
+        64,
+        1
+      ],
+      "block": [
+        128,
+        1,
+        1
+      ],
+      "blocks": 1152,
+      "threads_per_block": 128,
+      "registers_per_thread": 240,
+      "static_smem": 0.033,
+      "dynamic_smem": 0.0
+    }
+  ],
+  "git": {
+    "sha": "f1a308a5a75f4f8c602a8eed46c1c97619164009",
+    "dirty": false
+  },
+  "device": {
+    "name": "NVIDIA GeForce RTX 2080 Ti",
+    "compute_capability": "7.5",
+    "driver_version": "595.91.07"
+  }
+}

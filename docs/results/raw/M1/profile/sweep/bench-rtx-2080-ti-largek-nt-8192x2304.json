@@ -1,0 +1,2349 @@
+{
+  "schema": "flint-bench/1",
+  "benchmark": "gemm",
+  "quick": false,
+  "standard_protocol": true,
+  "args": [
+    "gemm",
+    "--layout",
+    "nt",
+    "--shapes",
+    "8192x2304x8192,8192x2304x12288,8192x2304x16384"
+  ],
+  "git": {
+    "sha": "f1a308a5a75f4f8c602a8eed46c1c97619164009",
+    "dirty": false
+  },
+  "timestamp_utc": "2026-10-30T08:18:52Z",
+  "os": "linux",
+  "flint_version": "0.0.0",
+  "device": {
+    "name": "NVIDIA GeForce RTX 2080 Ti",
+    "compute_capability": "7.5",
+    "sm_count": 68,
+    "l2_bytes": 5767168,
+    "bus_width_bits": 352,
+    "max_sm_clock_mhz": 2160,
+    "max_mem_clock_mhz": 7000,
+    "rated_bandwidth_gbs": 616,
+    "rated_sm_clock_mhz": 1545,
+    "driver_version": "595.91.07",
+    "cuda_driver_version": 13020,
+    "cuda_runtime_version": 12040
+  },
+  "options": {
+    "warmup_seconds": 1.5,
+    "sample_ms": 100,
+    "rounds": 10,
+    "max_rounds": 30,
+    "allow_busy": false,
+    "quick": false,
+    "lt_algo": "fastest"
+  },
+  "gpu_at_start": {
+    "other_processes": 0,
+    "used_bytes": 3997696,
+    "utilization_percent": 0,
+    "process_detection": true
+  },
+  "cases": [
+    {
+      "benchmark": "gemm",
+      "label": "8192x2304x8192",
+      "layout": "nt",
+      "epilogue": "none",
+      "baseline_name": "cuBLAS",
+      "baseline_algorithm": null,
+      "size_bytes": 209715200,
+      "bytes_moved": 0,
+      "flops": 309237645312,
+      "peak_flop_per_sm_per_clock": 512,
+      "one_sided": false,
+      "rotation_sets": 1,
+      "warmup_seconds": 1.965529114,
+      "ok": true,
+      "outputs_match": true,
+      "output_check": {
+        "rel_l2": 0,
+        "max_abs": 0,
+        "max_abs_baseline": 9.828125,
+        "nonfinite": 0,
+        "deterministic": true
+      },
+      "pre_check": null,
+      "enough_rounds": true,
+      "valid_rounds": 10,
+      "ratio": {
+        "median": 0.92413482151868975,
+        "min": 0.89944196416043098,
+        "max": 0.95315633673618982
+      },
+      "flint": {
+        "launches_per_sample": 18,
+        "min_sample_ms": 108.63158416748047,
+        "ms_per_launch": 6.090430153740777,
+        "gbs": 0,
+        "rated_fraction": 0,
+        "clock_adjusted_fraction": 0,
+        "tflops": 50.774352140310562,
+        "rated_compute_fraction": 0.94392401031833295,
+        "clock_adjusted_compute_fraction": 0.8755176552993762,
+        "stats": {
+          "seconds": 1.0965500349999999,
+          "samples": 120,
+          "failed_reads": 0,
+          "sm_mhz": 1665.7146627650236,
+          "mem_mhz": 6800,
+          "power_w": 257.69865872003101,
+          "temp_c_max": 57,
+          "thermal": 0,
+          "hw_slowdown": 0,
+          "sw_power_cap": 1,
+          "reason_shares": {
+            "gpu_idle": 0,
+            "applications_clocks": 0,
+            "sw_power_cap": 1,
+            "hw_slowdown": 0,
+            "sync_boost": 0,
+            "sw_thermal_slowdown": 0,
+            "hw_thermal_slowdown": 0,
+            "hw_power_brake": 0,
+            "display_clocks": 0
+          },
+          "new_process": false,
+          "used_bytes_max": 429719552
+        }
+      },
+      "baseline": {
+        "launches_per_sample": 19,
+        "min_sample_ms": 104.26242828369141,
+        "ms_per_launch": 5.63242601093493,
+        "gbs": 0,
+        "rated_fraction": 0,
+        "clock_adjusted_fraction": 0,
+        "tflops": 54.903099430270089,
+        "rated_compute_fraction": 1.0206797646558754,
+        "clock_adjusted_compute_fraction": 0.91927935088172774,
+        "stats": {
+          "seconds": 1.0697164329999991,
+          "samples": 116,
+          "failed_reads": 0,
+          "sm_mhz": 1715.420056896518,
+          "mem_mhz": 6800.0000000000009,
+          "power_w": 248.39754198838696,
+          "temp_c_max": 57,
+          "thermal": 0,
+          "hw_slowdown": 0,
+          "sw_power_cap": 1,
+          "reason_shares": {
+            "gpu_idle": 0,
+            "applications_clocks": 0,
+            "sw_power_cap": 1,
+            "hw_slowdown": 0,
+            "sync_boost": 0,
+            "sw_thermal_slowdown": 0,
+            "hw_thermal_slowdown": 0,
+            "hw_power_brake": 0,
+            "display_clocks": 0
+          },
+          "new_process": false,
+          "used_bytes_max": 429719552
+        }
+      },
+      "rounds": [
+        {
+          "flint_first": true,
+          "ratio": 0.94380491750389017,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 109.60720062255859,
+            "ms_per_launch": 6.0892889234754772,
+            "stats": {
+              "seconds": 0.10962485299999969,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1666.0985752017382,
+              "mem_mhz": 6800,
+              "power_w": 258.87124931167756,
+              "temp_c_max": 56,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 109.19491577148438,
+            "ms_per_launch": 5.747100830078125,
+            "stats": {
+              "seconds": 0.10920276299999987,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1677.7711337303799,
+              "mem_mhz": 6800,
+              "power_w": 253.78228889727825,
+              "temp_c_max": 56,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.90864009677461188,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 109.51567840576172,
+            "ms_per_launch": 6.0842043558756513,
+            "stats": {
+              "seconds": 0.10952192500000013,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1669.4483531493804,
+              "mem_mhz": 6800.0000000000018,
+              "power_w": 262.83396748931324,
+              "temp_c_max": 56,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 105.03868865966797,
+            "ms_per_launch": 5.5283520347193669,
+            "stats": {
+              "seconds": 0.10505115299999979,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1746.9316887935533,
+              "mem_mhz": 6800,
+              "power_w": 237.87884926803235,
+              "temp_c_max": 56,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.9384513354756685,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 110.2193603515625,
+            "ms_per_launch": 6.1232977973090277,
+            "stats": {
+              "seconds": 0.11023043600000015,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1654.0171231836553,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 252.5894972897685,
+              "temp_c_max": 56,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 109.18192291259766,
+            "ms_per_launch": 5.7464169953998763,
+            "stats": {
+              "seconds": 0.10918698399999993,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1678.4275429294757,
+              "mem_mhz": 6800,
+              "power_w": 260.31753173634695,
+              "temp_c_max": 56,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.90787049687217769,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 109.51862335205078,
+            "ms_per_launch": 6.084367964002821,
+            "stats": {
+              "seconds": 0.10953490800000054,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1673.8463957079325,
+              "mem_mhz": 6800,
+              "power_w": 253.69707171596843,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 104.95254516601562,
+            "ms_per_launch": 5.5238181666324015,
+            "stats": {
+              "seconds": 0.10496369400000027,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1748.7078081969944,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 243.51182707738923,
+              "temp_c_max": 56,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.93921761807836557,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 109.75846099853516,
+            "ms_per_launch": 6.0976922776963978,
+            "stats": {
+              "seconds": 0.10978568200000005,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1661.838684346835,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 261.1512876501327,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 108.81414031982422,
+            "ms_per_launch": 5.727060016832854,
+            "stats": {
+              "seconds": 0.108826745,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1686.2174803169937,
+              "mem_mhz": 6800,
+              "power_w": 250.42541449244854,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.90311082455293168,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 109.64828491210938,
+            "ms_per_launch": 6.0915713840060768,
+            "stats": {
+              "seconds": 0.10965413300000026,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1667.2605574748375,
+              "mem_mhz": 6800,
+              "power_w": 261.56689698193145,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 104.52591705322266,
+            "ms_per_launch": 5.501364055432771,
+            "stats": {
+              "seconds": 0.10454734400000021,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1757.1725408442703,
+              "mem_mhz": 6800.0000000000018,
+              "power_w": 246.10744728665711,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.93790003378693476,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 110.19955444335938,
+            "ms_per_launch": 6.1221974690755205,
+            "stats": {
+              "seconds": 0.1102138229999996,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1654.0193991818974,
+              "mem_mhz": 6800,
+              "power_w": 253.28415963690867,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 109.09817504882812,
+            "ms_per_launch": 5.7420092130962175,
+            "stats": {
+              "seconds": 0.10910353199999978,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1680.597857409419,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 256.68380008036775,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.89944196416043098,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 109.81801605224609,
+            "ms_per_launch": 6.1010008917914496,
+            "stats": {
+              "seconds": 0.10982415600000017,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1662.9469433391318,
+              "mem_mhz": 6799.9999999999982,
+              "power_w": 255.19133942636446,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 104.26242828369141,
+            "ms_per_launch": 5.4874962254574422,
+            "stats": {
+              "seconds": 0.1042773979999998,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1763.4922829585751,
+              "mem_mhz": 6800,
+              "power_w": 242.00910447877681,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.95315633673618982,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 108.63158416748047,
+            "ms_per_launch": 6.0350880093044701,
+            "stats": {
+              "seconds": 0.10865769299999961,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1680.1766938398002,
+              "mem_mhz": 6800,
+              "power_w": 257.86253000967918,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 109.29526519775391,
+            "ms_per_launch": 5.7523823788291528,
+            "stats": {
+              "seconds": 0.10931400299999972,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1676.9710080967398,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 246.96825066049405,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.91036960925044486,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 18,
+            "sample_ms": 109.49427032470703,
+            "ms_per_launch": 6.0830150180392799,
+            "stats": {
+              "seconds": 0.10950242599999971,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1667.7717257150089,
+              "mem_mhz": 6800,
+              "power_w": 259.99453678755935,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          },
+          "baseline": {
+            "launches": 19,
+            "sample_ms": 105.21804809570312,
+            "ms_per_launch": 5.5377920050370069,
+            "stats": {
+              "seconds": 0.10524281699999971,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1745.3359860179346,
+              "mem_mhz": 6799.9999999999982,
+              "power_w": 245.21798285414576,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 429719552
+            }
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "gemm",
+      "label": "8192x2304x12288",
+      "layout": "nt",
+      "epilogue": "none",
+      "baseline_name": "cuBLAS",
+      "baseline_algorithm": null,
+      "size_bytes": 295698432,
+      "bytes_moved": 0,
+      "flops": 463856467968,
+      "peak_flop_per_sm_per_clock": 512,
+      "one_sided": false,
+      "rotation_sets": 1,
+      "warmup_seconds": 2.062402278,
+      "ok": true,
+      "outputs_match": true,
+      "output_check": {
+        "rel_l2": 0,
+        "max_abs": 0,
+        "max_abs_baseline": 12.6640625,
+        "nonfinite": 0,
+        "deterministic": true
+      },
+      "pre_check": null,
+      "enough_rounds": true,
+      "valid_rounds": 10,
+      "ratio": {
+        "median": 0.83949343917537367,
+        "min": 0.750774544659642,
+        "max": 0.89172586494511097
+      },
+      "flint": {
+        "launches_per_sample": 11,
+        "min_sample_ms": 97.462913513183594,
+        "ms_per_launch": 10.228106065229937,
+        "gbs": 0,
+        "rated_fraction": 0,
+        "clock_adjusted_fraction": 0,
+        "tflops": 45.351159345605794,
+        "rated_compute_fraction": 0.84310377971527051,
+        "clock_adjusted_compute_fraction": 0.77863756565340869,
+        "stats": {
+          "seconds": 1.0968583800000005,
+          "samples": 116,
+          "failed_reads": 0,
+          "sm_mhz": 1672.9161257034843,
+          "mem_mhz": 6800,
+          "power_w": 257.83774237943373,
+          "temp_c_max": 58,
+          "thermal": 0,
+          "hw_slowdown": 0,
+          "sw_power_cap": 1,
+          "reason_shares": {
+            "gpu_idle": 0,
+            "applications_clocks": 0,
+            "sw_power_cap": 1,
+            "hw_slowdown": 0,
+            "sync_boost": 0,
+            "sw_thermal_slowdown": 0,
+            "hw_thermal_slowdown": 0,
+            "hw_power_brake": 0,
+            "display_clocks": 0
+          },
+          "new_process": false,
+          "used_bytes_max": 515702784
+        }
+      },
+      "baseline": {
+        "launches_per_sample": 13,
+        "min_sample_ms": 108.05510711669922,
+        "ms_per_launch": 8.4568099975585938,
+        "gbs": 0,
+        "rated_fraction": 0,
+        "clock_adjusted_fraction": 0,
+        "tflops": 54.850051982001631,
+        "rated_compute_fraction": 1.019693582499019,
+        "clock_adjusted_compute_fraction": 0.92607631693744041,
+        "stats": {
+          "seconds": 1.1045561439999982,
+          "samples": 121,
+          "failed_reads": 0,
+          "sm_mhz": 1701.1844014875176,
+          "mem_mhz": 6800,
+          "power_w": 252.10978270378075,
+          "temp_c_max": 58,
+          "thermal": 0,
+          "hw_slowdown": 0,
+          "sw_power_cap": 1,
+          "reason_shares": {
+            "gpu_idle": 0,
+            "applications_clocks": 0,
+            "sw_power_cap": 1,
+            "hw_slowdown": 0,
+            "sync_boost": 0,
+            "sw_thermal_slowdown": 0,
+            "hw_thermal_slowdown": 0,
+            "hw_power_brake": 0,
+            "display_clocks": 0
+          },
+          "new_process": false,
+          "used_bytes_max": 515702784
+        }
+      },
+      "rounds": [
+        {
+          "flint_first": true,
+          "ratio": 0.750774544659642,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 10,
+            "sample_ms": 113.26044464111328,
+            "ms_per_launch": 11.326044464111328,
+            "stats": {
+              "seconds": 0.11327106300000089,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1692.9424801548832,
+              "mem_mhz": 6800,
+              "power_w": 258.19897185206952,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 110.54297637939453,
+            "ms_per_launch": 8.5033058753380413,
+            "stats": {
+              "seconds": 0.11054902299999902,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1700.2803419167262,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 258.36631974697775,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.78948664768427168,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 10,
+            "sample_ms": 106.22134399414062,
+            "ms_per_launch": 10.622134399414062,
+            "stats": {
+              "seconds": 0.10623121000000069,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1685.0523013905233,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 256.12924822424594,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 109.0184326171875,
+            "ms_per_launch": 8.3860332782451916,
+            "stats": {
+              "seconds": 0.10903328999999928,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1724.3390441121242,
+              "mem_mhz": 6800,
+              "power_w": 252.32421205763859,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.89172586494511097,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 10,
+            "sample_ms": 97.462913513183594,
+            "ms_per_launch": 9.7462913513183587,
+            "stats": {
+              "seconds": 0.097477629000000121,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1672.254813204371,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 256.49069891165487,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 112.98326110839844,
+            "ms_per_launch": 8.6910200852614174,
+            "stats": {
+              "seconds": 0.11299187099999841,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1661.7906697907499,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 255.91992015441531,
+              "temp_c_max": 57,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.85747953833077273,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 11,
+            "sample_ms": 107.55039978027344,
+            "ms_per_launch": 9.7773090709339492,
+            "stats": {
+              "seconds": 0.10755424499999933,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1665.5510658365929,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 259.520675919486,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 108.98995208740234,
+            "ms_per_launch": 8.3838424682617188,
+            "stats": {
+              "seconds": 0.10900134000000072,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1722.6192016079801,
+              "mem_mhz": 6800,
+              "power_w": 244.47739719313532,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.84251876256519254,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 11,
+            "sample_ms": 113.01286315917969,
+            "ms_per_launch": 10.273896650834518,
+            "stats": {
+              "seconds": 0.11303164000000088,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1653.4141820378788,
+              "mem_mhz": 6800,
+              "power_w": 258.59349497696394,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 112.52735900878906,
+            "ms_per_launch": 8.6559506929837742,
+            "stats": {
+              "seconds": 0.11254541599999968,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1669.22678392339,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 256.53555621920657,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.82597265195799963,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 11,
+            "sample_ms": 112.00547027587891,
+            "ms_per_launch": 10.182315479625355,
+            "stats": {
+              "seconds": 0.1120171999999986,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1663.9393490910325,
+              "mem_mhz": 6800,
+              "power_w": 258.56721812868022,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 109.33408355712891,
+            "ms_per_launch": 8.4103141197791462,
+            "stats": {
+              "seconds": 0.10935613400000044,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1717.7648460487826,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 248.28142040955836,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.86766452467492783,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 11,
+            "sample_ms": 109.36009979248047,
+            "ms_per_launch": 9.9418272538618613,
+            "stats": {
+              "seconds": 0.10937722200000088,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1674.7693634511945,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 258.49257180860747,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 112.14022064208984,
+            "ms_per_launch": 8.6261708186222954,
+            "stats": {
+              "seconds": 0.11214706600000035,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1676.0559787181589,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 251.82887625411436,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.87171293907668224,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 11,
+            "sample_ms": 105.52873229980469,
+            "ms_per_launch": 9.5935211181640625,
+            "stats": {
+              "seconds": 0.10553362499999963,
+              "samples": 11,
+              "failed_reads": 0,
+              "sm_mhz": 1666.84516702615,
+              "mem_mhz": 6800,
+              "power_w": 263.42790292566002,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 108.71635437011719,
+            "ms_per_launch": 8.3627964900090141,
+            "stats": {
+              "seconds": 0.1087281830000002,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1729.043283147663,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 244.25632177784121,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.83646811578555469,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 11,
+            "sample_ms": 113.43209838867188,
+            "ms_per_launch": 10.312008944424717,
+            "stats": {
+              "seconds": 0.11344190099999985,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1665.9267844074654,
+              "mem_mhz": 6800,
+              "power_w": 253.88636819778785,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 112.1336669921875,
+            "ms_per_launch": 8.6256666917067299,
+            "stats": {
+              "seconds": 0.11213905199999985,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1675.8040624420473,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 258.45328980526779,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.76887024761282674,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 11,
+            "sample_ms": 118.91635131835938,
+            "ms_per_launch": 10.810577392578125,
+            "stats": {
+              "seconds": 0.1189226449999996,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1687.5451481507155,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 255.40270398804199,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          },
+          "baseline": {
+            "launches": 13,
+            "sample_ms": 108.05510711669922,
+            "ms_per_launch": 8.3119313166691704,
+            "stats": {
+              "seconds": 0.10806476900000028,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1739.2054521950633,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 250.08309600569265,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 515702784
+            }
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "gemm",
+      "label": "8192x2304x16384",
+      "layout": "nt",
+      "epilogue": "none",
+      "baseline_name": "cuBLAS",
+      "baseline_algorithm": null,
+      "size_bytes": 381681664,
+      "bytes_moved": 0,
+      "flops": 618475290624,
+      "peak_flop_per_sm_per_clock": 512,
+      "one_sided": false,
+      "rotation_sets": 1,
+      "warmup_seconds": 2.1137888459999998,
+      "ok": true,
+      "outputs_match": true,
+      "output_check": {
+        "rel_l2": 0,
+        "max_abs": 0,
+        "max_abs_baseline": 14.671875,
+        "nonfinite": 0,
+        "deterministic": true
+      },
+      "pre_check": null,
+      "enough_rounds": true,
+      "valid_rounds": 10,
+      "ratio": {
+        "median": 0.88456248108977642,
+        "min": 0.85939305735342031,
+        "max": 0.91768853172368769
+      },
+      "flint": {
+        "launches_per_sample": 9,
+        "min_sample_ms": 113.31574249267578,
+        "ms_per_launch": 12.791589525010849,
+        "gbs": 0,
+        "rated_fraction": 0,
+        "clock_adjusted_fraction": 0,
+        "tflops": 48.350151434637702,
+        "rated_compute_fraction": 0.89885674396322823,
+        "clock_adjusted_compute_fraction": 0.84601739556488798,
+        "stats": {
+          "seconds": 1.1544140070000033,
+          "samples": 125,
+          "failed_reads": 0,
+          "sm_mhz": 1641.4954074270856,
+          "mem_mhz": 6800.0000000000009,
+          "power_w": 258.68582782142477,
+          "temp_c_max": 59,
+          "thermal": 0,
+          "hw_slowdown": 0,
+          "sw_power_cap": 1,
+          "reason_shares": {
+            "gpu_idle": 0,
+            "applications_clocks": 0,
+            "sw_power_cap": 1,
+            "hw_slowdown": 0,
+            "sync_boost": 0,
+            "sw_thermal_slowdown": 0,
+            "hw_thermal_slowdown": 0,
+            "hw_power_brake": 0,
+            "display_clocks": 0
+          },
+          "new_process": false,
+          "used_bytes_max": 601686016
+        }
+      },
+      "baseline": {
+        "launches_per_sample": 10,
+        "min_sample_ms": 111.91117095947266,
+        "ms_per_launch": 11.403769302368165,
+        "gbs": 0,
+        "rated_fraction": 0,
+        "clock_adjusted_fraction": 0,
+        "tflops": 54.234286421031356,
+        "rated_compute_fraction": 1.0082461513999321,
+        "clock_adjusted_compute_fraction": 0.92289939017435307,
+        "stats": {
+          "seconds": 1.1397293099999928,
+          "samples": 122,
+          "failed_reads": 0,
+          "sm_mhz": 1687.8766206775892,
+          "mem_mhz": 6799.9999999999991,
+          "power_w": 251.27296647533348,
+          "temp_c_max": 59,
+          "thermal": 0,
+          "hw_slowdown": 0,
+          "sw_power_cap": 1,
+          "reason_shares": {
+            "gpu_idle": 0,
+            "applications_clocks": 0,
+            "sw_power_cap": 1,
+            "hw_slowdown": 0,
+            "sync_boost": 0,
+            "sw_thermal_slowdown": 0,
+            "hw_thermal_slowdown": 0,
+            "hw_power_brake": 0,
+            "display_clocks": 0
+          },
+          "new_process": false,
+          "used_bytes_max": 601686016
+        }
+      },
+      "rounds": [
+        {
+          "flint_first": true,
+          "ratio": 0.88798954299598187,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 117.18780517578125,
+            "ms_per_launch": 13.020867241753471,
+            "stats": {
+              "seconds": 0.11721010500000162,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1634.2069409459193,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 261.17104187659436,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 115.62393951416016,
+            "ms_per_launch": 11.562393951416016,
+            "stats": {
+              "seconds": 0.11563551699999763,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1659.4903293423256,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 257.25752065304471,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.89103818806248458,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 113.31574249267578,
+            "ms_per_launch": 12.590638054741753,
+            "stats": {
+              "seconds": 0.11332664300000062,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1644.4683821173446,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 263.05633351371773,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 112.18739318847656,
+            "ms_per_launch": 11.218739318847657,
+            "stats": {
+              "seconds": 0.11220337399999991,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1717.3901982216685,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 247.33761933943273,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.91504455332528334,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 113.69261169433594,
+            "ms_per_launch": 12.632512410481771,
+            "stats": {
+              "seconds": 0.11370595200000011,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1631.794755519921,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 253.15359781591761,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 115.59311676025391,
+            "ms_per_launch": 11.559311676025391,
+            "stats": {
+              "seconds": 0.11560250299999808,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1661.2584479247826,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 259.75915537735369,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.85939305735342031,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 118.20745849609375,
+            "ms_per_launch": 13.134162055121529,
+            "stats": {
+              "seconds": 0.11821280999999928,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1639.3013356166718,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 257.66196184900787,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 112.87407684326172,
+            "ms_per_launch": 11.287407684326173,
+            "stats": {
+              "seconds": 0.11288598299999819,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1707.3051594899964,
+              "mem_mhz": 6800,
+              "power_w": 247.8818140456022,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.91768853172368769,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 113.91187286376953,
+            "ms_per_launch": 12.65687476264106,
+            "stats": {
+              "seconds": 0.11393004199999979,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1652.1908177212815,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 256.01540407088572,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 116.15068817138672,
+            "ms_per_launch": 11.615068817138672,
+            "stats": {
+              "seconds": 0.11616958399999788,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1653.6189417274666,
+              "mem_mhz": 6800,
+              "power_w": 250.9097958842479,
+              "temp_c_max": 58,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.87360222236831553,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 115.81849670410156,
+            "ms_per_launch": 12.868721856011284,
+            "stats": {
+              "seconds": 0.11582452300000057,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1641.8017914479135,
+              "mem_mhz": 6800,
+              "power_w": 262.04533863358108,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 112.42144012451172,
+            "ms_per_launch": 11.242144012451172,
+            "stats": {
+              "seconds": 0.11243705300000073,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1712.5687879777495,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 243.1134912917274,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.87858469352652369,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 118.00931549072266,
+            "ms_per_launch": 13.112146165635851,
+            "stats": {
+              "seconds": 0.11802600800000107,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1648.3054481093682,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 258.56786165772036,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 115.20130920410156,
+            "ms_per_launch": 11.520130920410157,
+            "stats": {
+              "seconds": 0.11520634700000087,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1668.4252280822684,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 247.67066042900399,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.88113541918357097,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 114.43011474609375,
+            "ms_per_launch": 12.714457194010416,
+            "stats": {
+              "seconds": 0.11443563899999987,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1649.819847381636,
+              "mem_mhz": 6800,
+              "power_w": 263.33190088403285,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 112.03158569335938,
+            "ms_per_launch": 11.203158569335937,
+            "stats": {
+              "seconds": 0.11204553700000019,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1718.2730702160845,
+              "mem_mhz": 6800,
+              "power_w": 249.1634090577119,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": true,
+          "ratio": 0.91587196358440126,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 113.61084747314453,
+            "ms_per_launch": 12.62342749701606,
+            "stats": {
+              "seconds": 0.11362077700000128,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1636.4569179103578,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 253.3665985953167,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 115.61443328857422,
+            "ms_per_launch": 11.561443328857422,
+            "stats": {
+              "seconds": 0.11561960899999946,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1662.6372049052682,
+              "mem_mhz": 6799.9999999999991,
+              "power_w": 260.1679631597267,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        },
+        {
+          "flint_first": false,
+          "ratio": 0.86741224316334231,
+          "valid": true,
+          "discard_reason": null,
+          "flint": {
+            "launches": 9,
+            "sample_ms": 116.11555480957031,
+            "ms_per_launch": 12.901728312174479,
+            "stats": {
+              "seconds": 0.1161215079999991,
+              "samples": 13,
+              "failed_reads": 0,
+              "sm_mhz": 1636.6887283706305,
+              "mem_mhz": 6800.0000000000009,
+              "power_w": 258.38652117192629,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          },
+          "baseline": {
+            "launches": 10,
+            "sample_ms": 111.91117095947266,
+            "ms_per_launch": 11.191117095947266,
+            "stats": {
+              "seconds": 0.11192380299999982,
+              "samples": 12,
+              "failed_reads": 0,
+              "sm_mhz": 1721.9315100917374,
+              "mem_mhz": 6800.0000000000018,
+              "power_w": 248.89524887043922,
+              "temp_c_max": 59,
+              "thermal": 0,
+              "hw_slowdown": 0,
+              "sw_power_cap": 1,
+              "reason_shares": {
+                "gpu_idle": 0,
+                "applications_clocks": 0,
+                "sw_power_cap": 1,
+                "hw_slowdown": 0,
+                "sync_boost": 0,
+                "sw_thermal_slowdown": 0,
+                "hw_thermal_slowdown": 0,
+                "hw_power_brake": 0,
+                "display_clocks": 0
+              },
+              "new_process": false,
+              "used_bytes_max": 601686016
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# LF everywhere: shell scripts must run on the Linux server, and the laptop's
+# Git would otherwise check text files out with CRLF.
+* text=auto eol=lf

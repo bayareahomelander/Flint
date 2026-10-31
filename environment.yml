@@ -1,0 +1,21 @@
+# Flint's Linux build environment for the 2080 Ti server, installed without root.
+# Create or update it with scripts/setup_server.sh, which also installs
+# requirements.txt. CUDA 12.4.1 matches the laptop's toolkit.
+name: flint
+channels:
+  - nvidia/label/cuda-12.4.1
+  - conda-forge
+dependencies:
+  - cuda-toolkit=12.4.1
+  # nvcc 12.4 accepts GCC up to 13 as its host compiler. The *_linux-64
+  # packages set CC/CXX on activation; gcc/gxx add the plain gcc and g++
+  # names that nvcc looks for on PATH.
+  - gcc_linux-64=13
+  - gxx_linux-64=13
+  - gcc=13
+  - gxx=13
+  - cmake>=3.28
+  - ninja
+  - nsight-systems
+  - python=3.12
+  - pip

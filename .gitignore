@@ -1,0 +1,22 @@
+# Local reference docs, never committed
+PLAN.md
+AGENTS.md
+LOGS.md
+LOGS-archive.md
+CLAUDE.md
+
+# Environments and build output
+.venv/
+build/
+build-*/
+
+# Data, checkpoints, and profiler reports stay out of git
+data/
+checkpoints/
+*.nsys-rep
+*.ncu-rep
+*.sqlite
+
+# Python
+__pycache__/
+.pytest_cache/

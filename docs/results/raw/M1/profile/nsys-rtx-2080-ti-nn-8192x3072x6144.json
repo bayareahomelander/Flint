@@ -1,0 +1,70 @@
+{
+  "schema": "flint-nsys/1",
+  "case": "nn-8192x3072x6144",
+  "command": "nsys profile --trace=cuda --sample=none --cpuctxsw=none -o <reports>/nn-8192x3072x6144 <flint_bench> gemm --quick --layout nn --shapes 8192x3072x6144 --out <reports>/nn-8192x3072x6144.bench.json",
+  "nsys_version": "2026.3.2.476-263238834031v0",
+  "csv_files": 1,
+  "smem_unit": {
+    "static_smem": "mb",
+    "dynamic_smem": "mb"
+  },
+  "groups": [
+    {
+      "side": "flint",
+      "name": "flint::<unnamed>::gemm_nn(__half *, const __half *, const __half *, int, int, int)",
+      "count": 22,
+      "median_us": 5747.035,
+      "min_us": 5062.641,
+      "max_us": 5928.585,
+      "total_us": 122603.405,
+      "grid": [
+        8,
+        24,
+        8
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "blocks": 1536,
+      "threads_per_block": 256,
+      "registers_per_thread": 128,
+      "static_smem": 0.019,
+      "dynamic_smem": 0.0
+    },
+    {
+      "side": "baseline",
+      "name": "turing_fp16_s1688gemm_fp16_128x256_ldg8_f2f_stages_32x1_nn",
+      "count": 29,
+      "median_us": 5629.1,
+      "min_us": 4878.291,
+      "max_us": 5714.154,
+      "total_us": 157825.573,
+      "grid": [
+        24,
+        32,
+        1
+      ],
+      "block": [
+        256,
+        1,
+        1
+      ],
+      "blocks": 768,
+      "threads_per_block": 256,
+      "registers_per_thread": 234,
+      "static_smem": 0.049,
+      "dynamic_smem": 0.016
+    }
+  ],
+  "git": {
+    "sha": "f1a308a5a75f4f8c602a8eed46c1c97619164009",
+    "dirty": false
+  },
+  "device": {
+    "name": "NVIDIA GeForce RTX 2080 Ti",
+    "compute_capability": "7.5",
+    "driver_version": "595.91.07"
+  }
+}

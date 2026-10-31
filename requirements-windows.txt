@@ -1,0 +1,5 @@
+# The Windows laptop's Python packages: the shared set plus the build tools that
+# the server gets from environment.yml instead (same versions there).
+-r requirements.txt
+cmake==4.4.4
+ninja==1.13.2

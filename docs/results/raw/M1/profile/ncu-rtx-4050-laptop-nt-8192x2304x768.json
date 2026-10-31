@@ -1,0 +1,1286 @@
+{
+ "schema": "flint-ncu/1",
+ "device": {
+  "name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "compute_capability": "8.9",
+  "driver_version": "610.88"
+ },
+ "ncu_version": "2024.1.1.0 (build 33998838) (public-release)",
+ "git": {
+  "sha": "f1a308a5a75f4f8c602a8eed46c1c97619164009",
+  "dirty": false
+ },
+ "layout": "nt",
+ "shape": "8192x2304x768",
+ "clock_control": "base",
+ "cache_control": "all",
+ "commands": {
+  "flint": ["<ncu>", "-k", "regex:^flint::", "--kernel-name-base", "demangled", "--clock-control", "base", "--cache-control", "all", "--launch-skip", "1", "--launch-count", "1", "--set", "full", "-f", "--export", "<reports>/nt-8192x2304x768-flint.ncu-rep", "<flint_bench>", "gemm", "--allow-busy", "--layout", "nt", "--shapes", "8192x2304x768", "--warmup", "0", "--rounds", "1", "--sample-ms", "1", "--out", "<reports>/nt-8192x2304x768-flint.bench.json"],
+  "baseline": ["<ncu>", "-k", "regex:^(?!flint::)", "--kernel-name-base", "demangled", "--clock-control", "base", "--cache-control", "all", "--launch-skip", "1", "--launch-count", "1", "--section", "ComputeWorkloadAnalysis", "--section", "InstructionStats", "--section", "LaunchStats", "--section", "MemoryWorkloadAnalysis", "--section", "MemoryWorkloadAnalysis_Chart", "--section", "MemoryWorkloadAnalysis_Tables", "--section", "NumaAffinity", "--section", "Nvlink_Tables", "--section", "Nvlink_Topology", "--section", "Occupancy", "--section", "PmSampling", "--section", "SchedulerStats", "--section", "SpeedOfLight", "--section", "SpeedOfLight_RooflineChart", "--section", "WarpStateStats", "--section", "WorkloadDistribution", "-f", "--export", "<reports>/nt-8192x2304x768-baseline.ncu-rep", "<flint_bench>", "gemm", "--allow-busy", "--layout", "nt", "--shapes", "8192x2304x768", "--warmup", "0", "--rounds", "1", "--sample-ms", "1", "--out", "<reports>/nt-8192x2304x768-baseline.bench.json"]
+ },
+ "bench_ratio": {
+  "note": "flint_bench's flint/baseline throughput ratio from an unprofiled --warmup 0 --rounds 1 --sample-ms 1 run; informational only",
+  "median": 0.8670520185833848,
+  "ok": true
+ },
+ "sides": {
+  "flint": [
+   {
+    "name": "flint::<unnamed>::gemm_nt(__half *, const __half *, const __half *, int, int, int)",
+    "block": [256, 1, 1],
+    "grid": [8, 18, 8],
+    "metrics": {
+     "gpu__time_duration.sum": {
+      "value": 2.961632,
+      "unit": "msecond"
+     },
+     "sm__cycles_elapsed.avg.per_second": {
+      "value": 1.139978,
+      "unit": "cycle/nsecond"
+     },
+     "sm__cycles_elapsed.max": {
+      "value": 3376197,
+      "unit": "cycle"
+     },
+     "sm__cycles_active.avg": {
+      "value": 3346489.45,
+      "unit": "cycle"
+     },
+     "launch__registers_per_thread": {
+      "value": 127,
+      "unit": "register/thread"
+     },
+     "launch__shared_mem_per_block_static": {
+      "value": 20.48,
+      "unit": "Kbyte/block"
+     },
+     "launch__shared_mem_per_block_dynamic": {
+      "value": 0,
+      "unit": "byte/block"
+     },
+     "launch__block_size": {
+      "value": 256,
+      "unit": ""
+     },
+     "launch__grid_size": {
+      "value": 1152,
+      "unit": ""
+     },
+     "launch__occupancy_limit_registers": {
+      "value": 2,
+      "unit": "block"
+     },
+     "launch__occupancy_limit_shared_mem": {
+      "value": 3,
+      "unit": "block"
+     },
+     "launch__occupancy_limit_warps": {
+      "value": 6,
+      "unit": "block"
+     },
+     "launch__occupancy_limit_blocks": {
+      "value": 24,
+      "unit": "block"
+     },
+     "launch__waves_per_multiprocessor": {
+      "value": 28.8,
+      "unit": ""
+     },
+     "sm__maximum_warps_per_active_cycle_pct": {
+      "value": 33.333333,
+      "unit": "%"
+     },
+     "sm__warps_active.avg.pct_of_peak_sustained_active": {
+      "value": 32.712193,
+      "unit": "%"
+     },
+     "sm__pipe_tensor_op_hmma_cycles_active.avg.pct_of_peak_sustained_active": {
+      "value": 42.300375,
+      "unit": "%"
+     },
+     "sm__inst_executed_pipe_tensor_op_hmma.avg.pct_of_peak_sustained_active": {
+      "value": 42.300375,
+      "unit": "%"
+     },
+     "smsp__inst_executed.sum": {
+      "value": 31214592,
+      "unit": "inst"
+     },
+     "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+      "value": 11.644853,
+      "unit": "%"
+     },
+     "smsp__issue_active.avg.per_cycle_active": {
+      "value": 0.12,
+      "unit": ""
+     },
+     "smsp__average_warp_latency_per_inst_issued.ratio": {
+      "value": 33.695109,
+      "unit": "cycle"
+     },
+     "dram__bytes_read.sum": {
+      "value": 5.391744,
+      "unit": "Mbyte"
+     },
+     "dram__bytes_write.sum": {
+      "value": 9.595648,
+      "unit": "Mbyte"
+     },
+     "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed": {
+      "value": 3.957121,
+      "unit": "%"
+     },
+     "lts__t_sector_hit_rate.pct": {
+      "value": 100.216147,
+      "unit": "%"
+     },
+     "lts__t_sectors.sum": {
+      "value": 16411946,
+      "unit": "sector"
+     },
+     "l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_ld.sum": {
+      "value": 0,
+      "unit": ""
+     },
+     "l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum": {
+      "value": 3538944,
+      "unit": ""
+     },
+     "l1tex__data_pipe_lsu_wavefronts_mem_shared_op_ld.sum": {
+      "value": 10618441,
+      "unit": ""
+     },
+     "l1tex__data_pipe_lsu_wavefronts_mem_shared_op_st.sum": {
+      "value": 7077888,
+      "unit": ""
+     },
+     "smsp__sass_inst_executed_op_shared_ld.sum": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__sass_inst_executed_op_shared_st.sum": {
+      "value": 884736,
+      "unit": "inst"
+     },
+     "smsp__sass_inst_executed_op_global_ld.sum": {
+      "value": 884736,
+      "unit": "inst"
+     },
+     "smsp__sass_inst_executed_op_global_st.sum": {
+      "value": 294912,
+      "unit": "inst"
+     },
+     "smsp__inst_executed_op_ldsm.sum": {
+      "value": 2654208,
+      "unit": "inst"
+     },
+     "sm__throughput.avg.pct_of_peak_sustained_elapsed": {
+      "value": 41.928204,
+      "unit": "%"
+     },
+     "gpu__compute_memory_throughput.avg.pct_of_peak_sustained_elapsed": {
+      "value": 40.521315,
+      "unit": "%"
+     },
+     "l1tex__throughput.avg.pct_of_peak_sustained_active": {
+      "value": 40.880998,
+      "unit": "%"
+     },
+     "smsp__average_warps_issue_stalled_barrier_per_issue_active.ratio": {
+      "value": 2.955579,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_branch_resolving_per_issue_active.ratio": {
+      "value": 0.035151,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_dispatch_stall_per_issue_active.ratio": {
+      "value": 0.134926,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_drain_per_issue_active.ratio": {
+      "value": 0.162066,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_imc_miss_per_issue_active.ratio": {
+      "value": 0.007399,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_lg_throttle_per_issue_active.ratio": {
+      "value": 1.0829,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active.ratio": {
+      "value": 5.35523,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_math_pipe_throttle_per_issue_active.ratio": {
+      "value": 17.69192,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_membar_per_issue_active.ratio": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_mio_throttle_per_issue_active.ratio": {
+      "value": 2.024962,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_misc_per_issue_active.ratio": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_no_instruction_per_issue_active.ratio": {
+      "value": 0.04123,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_not_selected_per_issue_active.ratio": {
+      "value": 1.03306,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_selected_per_issue_active.ratio": {
+      "value": 1,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_short_scoreboard_per_issue_active.ratio": {
+      "value": 0.073967,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_sleeping_per_issue_active.ratio": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_tex_throttle_per_issue_active.ratio": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_wait_per_issue_active.ratio": {
+      "value": 2.096261,
+      "unit": "inst"
+     }
+    },
+    "source": [
+     {"offset": 0, "sass": "IMAD.MOV.U32 R1, RZ, RZ, c[0x0][0x28]", "samples": 15, "samples_not_issued": 14, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_imc": 9, "stall_no_inst": 6}},
+     {"offset": 16, "sass": "S2R R124, SR_CTAID.Z", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 32, "sass": "S2R R3, SR_CTAID.X", "samples": 2, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 2}},
+     {"offset": 48, "sass": "IMAD R124, R124, c[0x0][0xc], R3", "samples": 17, "samples_not_issued": 14, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_short_sb": 15}},
+     {"offset": 64, "sass": "IMAD.SHL.U32 R124, R124, 0x80, RZ", "samples": 3, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 3}},
+     {"offset": 80, "sass": "ISETP.GE.AND P0, PT, R124, c[0x0][0x178], PT", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_imc": 1}},
+     {"offset": 96, "sass": "@P0   EXIT", "samples": 7, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 6}},
+     {"offset": 112, "sass": "ISETP.LT.AND P0, PT, RZ, c[0x0][0x180], PT", "samples": 7, "samples_not_issued": 4, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_imc": 5, "stall_selected": 2}},
+     {"offset": 128, "sass": "ULDC.64 UR4, c[0x0][0x118]", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 144, "sass": "@P0   BRA 0x700e9e5b0", "samples": 7, "samples_not_issued": 4, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_wait": 5}},
+     {"offset": 160, "sass": "CS2R R50, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 176, "sass": "CS2R R48, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 192, "sass": "CS2R R46, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 208, "sass": "CS2R R44, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 224, "sass": "CS2R R42, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 240, "sass": "CS2R R40, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 256, "sass": "CS2R R38, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 272, "sass": "CS2R R36, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 288, "sass": "CS2R R34, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 304, "sass": "CS2R R32, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 320, "sass": "CS2R R30, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 336, "sass": "CS2R R28, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 352, "sass": "CS2R R52, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 368, "sass": "CS2R R54, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 384, "sass": "CS2R R56, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 400, "sass": "CS2R R58, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 416, "sass": "CS2R R60, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 432, "sass": "CS2R R62, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 448, "sass": "CS2R R68, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 464, "sass": "CS2R R70, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 480, "sass": "CS2R R80, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 496, "sass": "CS2R R82, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 512, "sass": "CS2R R88, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 528, "sass": "CS2R R90, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 544, "sass": "CS2R R96, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 560, "sass": "CS2R R98, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 576, "sass": "CS2R R108, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 592, "sass": "CS2R R110, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 608, "sass": "CS2R R112, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 624, "sass": "CS2R R114, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 640, "sass": "CS2R R104, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 656, "sass": "CS2R R106, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 672, "sass": "BRA 0x700e9f220", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 688, "sass": "S2R R10, SR_TID.X", "samples": 6, "samples_not_issued": 6, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 2, "stall_no_inst": 4}},
+     {"offset": 704, "sass": "IMAD.MOV.U32 R9, RZ, RZ, 0x50", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 720, "sass": "IADD3 R123, -R124, c[0x0][0x178], RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 736, "sass": "IMAD.MOV.U32 R118, RZ, RZ, RZ", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 752, "sass": "CS2R R50, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 768, "sass": "CS2R R48, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 784, "sass": "CS2R R46, SRZ", "samples": 7, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 3, "stall_not_selected": 4}},
+     {"offset": 800, "sass": "CS2R R44, SRZ", "samples": 3, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_selected": 2}},
+     {"offset": 816, "sass": "CS2R R42, SRZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_not_selected": 1}},
+     {"offset": 832, "sass": "CS2R R40, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 848, "sass": "CS2R R38, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 864, "sass": "CS2R R36, SRZ", "samples": 2, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2}},
+     {"offset": 880, "sass": "CS2R R34, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 896, "sass": "CS2R R32, SRZ", "samples": 4, "samples_not_issued": 3, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 3, "stall_not_selected": 1}},
+     {"offset": 912, "sass": "CS2R R30, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 928, "sass": "CS2R R28, SRZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_selected": 1}},
+     {"offset": 944, "sass": "CS2R R52, SRZ", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 960, "sass": "CS2R R54, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 976, "sass": "CS2R R56, SRZ", "samples": 3, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_not_selected": 2}},
+     {"offset": 992, "sass": "CS2R R58, SRZ", "samples": 3, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2, "stall_not_selected": 1}},
+     {"offset": 1008, "sass": "CS2R R60, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1}},
+     {"offset": 1024, "sass": "CS2R R62, SRZ", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 1040, "sass": "CS2R R68, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 1056, "sass": "CS2R R70, SRZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1072, "sass": "LOP3.LUT R2, R10, 0x1f, RZ, 0xc0, !PT", "samples": 8, "samples_not_issued": 6, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2, "stall_short_sb": 6}},
+     {"offset": 1088, "sass": "IMAD.SHL.U32 R6, R10, 0x2, RZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1104, "sass": "SHF.R.U32.HI R4, RZ, 0x7, R10", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1120, "sass": "CS2R R80, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 1136, "sass": "SHF.R.U32.HI R3, RZ, 0x4, R2", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1152, "sass": "CS2R R82, SRZ", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 1168, "sass": "LOP3.LUT R0, R10, 0x7, RZ, 0xc0, !PT", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2}},
+     {"offset": 1184, "sass": "IMAD.SHL.U32 R7, R4, 0x40, RZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1200, "sass": "LOP3.LUT R2, R10, 0xf, RZ, 0xc0, !PT", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1216, "sass": "IMAD.SHL.U32 R5, R3, 0x8, RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1232, "sass": "LOP3.LUT R0, R0, 0x60, R10, 0xf8, !PT", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1248, "sass": "CS2R R88, SRZ", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_selected": 1}},
+     {"offset": 1264, "sass": "IADD3 R119, R10, 0x100, RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1}},
+     {"offset": 1280, "sass": "CS2R R90, SRZ", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 1296, "sass": "LOP3.LUT R8, R7, 0xffffffc0, R2, 0xe2, !PT", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 1312, "sass": "CS2R R96, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1328, "sass": "LOP3.LUT R4, R0, R5, RZ, 0xfc, !PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1344, "sass": "CS2R R98, SRZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2}},
+     {"offset": 1360, "sass": "SHF.R.S32.HI R0, RZ, 0x1f, R10", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1376, "sass": "IMAD R3, R8, 0x5, R3", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1392, "sass": "SHF.R.S32.HI R2, RZ, 0x1f, R119", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1408, "sass": "IMAD R7, R4, R9, 0x2800", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1424, "sass": "LOP3.LUT R5, R5, 0x60, R10, 0xf8, !PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1440, "sass": "CS2R R108, SRZ", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 1456, "sass": "LEA.HI R0, R0, R10, RZ, 0x2", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_selected": 1}},
+     {"offset": 1472, "sass": "CS2R R110, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1}},
+     {"offset": 1488, "sass": "LEA.HI R2, R2, R119, RZ, 0x2", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1}},
+     {"offset": 1504, "sass": "CS2R R112, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1520, "sass": "LOP3.LUT R5, R5, 0x7, R10, 0xf8, !PT", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2}},
+     {"offset": 1536, "sass": "CS2R R114, SRZ", "samples": 2, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2}},
+     {"offset": 1552, "sass": "LOP3.LUT R121, R0, 0x1ffffffc, RZ, 0xc0, !PT", "samples": 4, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2, "stall_selected": 2}},
+     {"offset": 1568, "sass": "CS2R R104, SRZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_not_selected": 1}},
+     {"offset": 1584, "sass": "LOP3.LUT R4, R2, 0x1ffffffc, RZ, 0xc0, !PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1600, "sass": "IMAD R5, R5, R9, 0x2800", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 1616, "sass": "LOP3.LUT R6, R6, 0x10, RZ, 0xc0, !PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1632, "sass": "IMAD.IADD R121, R10, 0x1, -R121", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1648, "sass": "SHF.R.S32.HI R122, RZ, 0x2, R0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1664, "sass": "IMAD.IADD R119, R119, 0x1, -R4", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1680, "sass": "SHF.R.S32.HI R120, RZ, 0x2, R2", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1696, "sass": "IMAD.IADD R116, R6, 0x1, R7", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1712, "sass": "CS2R R106, SRZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 1728, "sass": "IMAD.IADD R117, R5, 0x1, R6", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1744, "sass": "IMAD.SHL.U32 R3, R3, 0x10, RZ", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_wait": 1}},
+     {"offset": 1760, "sass": "IMAD R2, R122, 0x5, R121", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 1776, "sass": "IMAD R0, R120, 0x5, R119", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 1792, "sass": "S2R R9, SR_CTAID.Y", "samples": 56, "samples_not_issued": 54, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 33, "stall_no_inst": 23}},
+     {"offset": 1808, "sass": "IMAD R7, R121, 0x8, R118", "samples": 9, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 9}},
+     {"offset": 1824, "sass": "CS2R R64, SRZ", "samples": 14, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 14}},
+     {"offset": 1840, "sass": "IMAD.MOV.U32 R4, RZ, RZ, -0x80", "samples": 16, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 16}},
+     {"offset": 1856, "sass": "CS2R R66, SRZ", "samples": 13, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 13}},
+     {"offset": 1872, "sass": "IMAD R11, R119, 0x8, R118", "samples": 14, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 14}},
+     {"offset": 1888, "sass": "ISETP.GE.AND P0, PT, R7, c[0x0][0x180], PT", "samples": 17, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 17}},
+     {"offset": 1904, "sass": "CS2R R72, SRZ", "samples": 32, "samples_not_issued": 3, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 8, "stall_not_selected": 3, "stall_selected": 21}},
+     {"offset": 1920, "sass": "CS2R R74, SRZ", "samples": 36, "samples_not_issued": 11, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 13, "stall_not_selected": 1, "stall_selected": 22}},
+     {"offset": 1936, "sass": "CS2R R76, SRZ", "samples": 37, "samples_not_issued": 19, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 20, "stall_not_selected": 2, "stall_selected": 15}},
+     {"offset": 1952, "sass": "BAR.SYNC.DEFER_BLOCKING 0x0", "samples": 986, "samples_not_issued": 889, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 802, "stall_mio": 149, "stall_not_selected": 19, "stall_selected": 16}},
+     {"offset": 1968, "sass": "ISETP.GE.OR P2, PT, R122, R123, P0", "samples": 17, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_selected": 16}},
+     {"offset": 1984, "sass": "ISETP.GE.AND P1, PT, R11, c[0x0][0x180], PT", "samples": 43, "samples_not_issued": 15, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 6, "stall_not_selected": 11, "stall_selected": 13, "stall_wait": 12}},
+     {"offset": 2000, "sass": "ISETP.GE.OR P3, PT, R120, R123, P1", "samples": 55, "samples_not_issued": 36, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_not_selected": 1, "stall_selected": 12, "stall_wait": 41}},
+     {"offset": 2016, "sass": "IMAD R5, R9, R4, c[0x0][0x17c]", "samples": 80, "samples_not_issued": 53, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_selected": 14, "stall_short_sb": 65}},
+     {"offset": 2032, "sass": "@!P2  IMAD R4, R122, c[0x0][0x180], R7", "samples": 94, "samples_not_issued": 70, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 3, "stall_selected": 15, "stall_wait": 76}},
+     {"offset": 2048, "sass": "ISETP.GE.OR P0, PT, R122, R5, P0", "samples": 12, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 12}},
+     {"offset": 2064, "sass": "@!P3  IMAD R8, R120, c[0x0][0x180], R11", "samples": 71, "samples_not_issued": 54, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_not_selected": 3, "stall_selected": 11, "stall_wait": 56}},
+     {"offset": 2080, "sass": "ISETP.GE.OR P1, PT, R120, R5, P1", "samples": 15, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 15}},
+     {"offset": 2096, "sass": "@!P2  SHF.R.S32.HI R5, RZ, 0x1f, R4", "samples": 27, "samples_not_issued": 15, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2, "stall_selected": 10, "stall_wait": 15}},
+     {"offset": 2112, "sass": "@!P2  IMAD.WIDE R4, R124, c[0x0][0x180], R4", "samples": 76, "samples_not_issued": 50, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_not_selected": 2, "stall_selected": 15, "stall_wait": 58}},
+     {"offset": 2128, "sass": "@!P0  IMAD R6, R122, c[0x0][0x180], R7", "samples": 57, "samples_not_issued": 39, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 4, "stall_not_selected": 1, "stall_selected": 9, "stall_wait": 43}},
+     {"offset": 2144, "sass": "@!P2  LEA R12, P4, R4, c[0x0][0x168], 0x1", "samples": 69, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 55, "stall_selected": 14}},
+     {"offset": 2160, "sass": "@!P1  IMAD R10, R120, c[0x0][0x180], R11", "samples": 8, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 8}},
+     {"offset": 2176, "sass": "@!P0  IMAD.SHL.U32 R13, R9, 0x80, RZ", "samples": 31, "samples_not_issued": 8, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_selected": 16, "stall_wait": 14}},
+     {"offset": 2192, "sass": "@!P0  SHF.R.S32.HI R7, RZ, 0x1f, R6", "samples": 11, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_selected": 10}},
+     {"offset": 2208, "sass": "@!P1  IMAD.SHL.U32 R15, R9, 0x80, RZ", "samples": 17, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 4, "stall_selected": 13}},
+     {"offset": 2224, "sass": "@!P1  SHF.R.S32.HI R11, RZ, 0x1f, R10", "samples": 12, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_selected": 11}},
+     {"offset": 2240, "sass": "@!P3  SHF.R.S32.HI R9, RZ, 0x1f, R8", "samples": 35, "samples_not_issued": 15, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 1, "stall_not_selected": 2, "stall_selected": 10, "stall_wait": 21}},
+     {"offset": 2256, "sass": "@!P0  IMAD.WIDE R6, R13, c[0x0][0x180], R6", "samples": 17, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_selected": 16}},
+     {"offset": 2272, "sass": "@!P2  LEA.HI.X R13, R4, c[0x0][0x16c], R5, 0x1, P4", "samples": 17, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 17}},
+     {"offset": 2288, "sass": "@!P1  IMAD.WIDE R10, R15, c[0x0][0x180], R10", "samples": 56, "samples_not_issued": 22, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 7, "stall_selected": 16, "stall_wait": 33}},
+     {"offset": 2304, "sass": "@!P0  LEA R14, P4, R6, c[0x0][0x170], 0x1", "samples": 62, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 48, "stall_selected": 14}},
+     {"offset": 2320, "sass": "CS2R R78, SRZ", "samples": 41, "samples_not_issued": 17, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 3, "stall_math": 24, "stall_not_selected": 3, "stall_selected": 11}},
+     {"offset": 2336, "sass": "CS2R R84, SRZ", "samples": 65, "samples_not_issued": 47, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 43, "stall_math": 11, "stall_not_selected": 1, "stall_selected": 10}},
+     {"offset": 2352, "sass": "@!P3  IMAD.WIDE R8, R124, c[0x0][0x180], R8", "samples": 19, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 2, "stall_selected": 17}},
+     {"offset": 2368, "sass": "@!P1  LEA R20, P6, R10, c[0x0][0x170], 0x1", "samples": 19, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 19}},
+     {"offset": 2384, "sass": "CS2R R86, SRZ", "samples": 34, "samples_not_issued": 10, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 2, "stall_math": 15, "stall_not_selected": 3, "stall_selected": 14}},
+     {"offset": 2400, "sass": "@!P0  LEA.HI.X R15, R6, c[0x0][0x174], R7, 0x1, P4", "samples": 62, "samples_not_issued": 42, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 36, "stall_math": 15, "stall_not_selected": 1, "stall_selected": 10}},
+     {"offset": 2416, "sass": "@!P2  LDG.E.128.CONSTANT R64, [R12.64]", "samples": 3796, "samples_not_issued": 3241, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_barrier": 3405, "stall_dispatch": 4, "stall_lg": 79, "stall_mio": 261, "stall_not_selected": 30, "stall_selected": 17}},
+     {"offset": 2432, "sass": "@!P3  LEA R16, P5, R8, c[0x0][0x168], 0x1", "samples": 19, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 3, "stall_selected": 16}},
+     {"offset": 2448, "sass": "@!P1  LEA.HI.X R21, R10, c[0x0][0x174], R11, 0x1, P6", "samples": 69, "samples_not_issued": 22, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 2, "stall_math": 21, "stall_not_selected": 14, "stall_selected": 10, "stall_wait": 22}},
+     {"offset": 2464, "sass": "@!P0  LDG.E.128.CONSTANT R72, [R14.64]", "samples": 183, "samples_not_issued": 145, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 4, "stall_lg": 43, "stall_mio": 110, "stall_not_selected": 7, "stall_selected": 19}},
+     {"offset": 2480, "sass": "@!P3  LEA.HI.X R17, R8, c[0x0][0x16c], R9, 0x1, P5", "samples": 11, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 11}},
+     {"offset": 2496, "sass": "@!P1  LDG.E.128.CONSTANT R84, [R20.64]", "samples": 294, "samples_not_issued": 216, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 3, "stall_lg": 115, "stall_mio": 103, "stall_not_selected": 15, "stall_selected": 24, "stall_wait": 34}},
+     {"offset": 2512, "sass": "@!P3  LDG.E.128.CONSTANT R76, [R16.64]", "samples": 305, "samples_not_issued": 254, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 168, "stall_mio": 66, "stall_not_selected": 7, "stall_selected": 13, "stall_wait": 51}},
+     {"offset": 2528, "sass": "IADD3 R118, R118, 0x20, RZ", "samples": 16, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_selected": 15}},
+     {"offset": 2544, "sass": "ISETP.GE.AND P0, PT, R118, c[0x0][0x180], PT", "samples": 83, "samples_not_issued": 36, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 2, "stall_math": 10, "stall_not_selected": 14, "stall_selected": 15, "stall_wait": 42}},
+     {"offset": 2560, "sass": "STS.128 [R2.X16], R64", "samples": 6430, "samples_not_issued": 5952, "executed": 221184, "l1_wavefronts_shared": 1769472, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_dispatch": 1, "stall_long_sb": 6130, "stall_mio": 262, "stall_not_selected": 13, "stall_selected": 24}},
+     {"offset": 2576, "sass": "STS.128 [R2.X16+0x2800], R72", "samples": 1735, "samples_not_issued": 1584, "executed": 221184, "l1_wavefronts_shared": 1769472, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_long_sb": 1572, "stall_mio": 101, "stall_not_selected": 1, "stall_selected": 17, "stall_wait": 44}},
+     {"offset": 2592, "sass": "STS.128 [R0.X16+0x2800], R84", "samples": 1526, "samples_not_issued": 1366, "executed": 221184, "l1_wavefronts_shared": 1769472, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_long_sb": 1412, "stall_mio": 46, "stall_not_selected": 3, "stall_selected": 14, "stall_wait": 51}},
+     {"offset": 2608, "sass": "STS.128 [R0.X16], R76", "samples": 1318, "samples_not_issued": 1170, "executed": 221184, "l1_wavefronts_shared": 1769472, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_dispatch": 1, "stall_long_sb": 1220, "stall_mio": 34, "stall_not_selected": 4, "stall_selected": 11, "stall_wait": 48}},
+     {"offset": 2624, "sass": "BAR.SYNC.DEFER_BLOCKING 0x0", "samples": 80, "samples_not_issued": 65, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_mio": 27, "stall_not_selected": 1, "stall_selected": 8, "stall_wait": 44}},
+     {"offset": 2640, "sass": "LDSM.16.M88.4 R4, [R3]", "samples": 2576, "samples_not_issued": 2258, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_barrier": 2474, "stall_dispatch": 1, "stall_mio": 8, "stall_not_selected": 7, "stall_selected": 17, "stall_wait": 69}},
+     {"offset": 2656, "sass": "LDSM.16.M88.4 R8, [R116]", "samples": 93, "samples_not_issued": 59, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 36, "stall_not_selected": 1, "stall_selected": 11, "stall_wait": 45}},
+     {"offset": 2672, "sass": "LDSM.16.M88.4 R12, [R117+0x500]", "samples": 116, "samples_not_issued": 77, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_dispatch": 1, "stall_mio": 49, "stall_not_selected": 3, "stall_selected": 9, "stall_wait": 54}},
+     {"offset": 2688, "sass": "LDSM.16.M88.4 R16, [R3+0x500]", "samples": 500, "samples_not_issued": 419, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_dispatch": 1, "stall_mio": 410, "stall_not_selected": 26, "stall_selected": 12, "stall_wait": 51}},
+     {"offset": 2704, "sass": "LDSM.16.M88.4 R20, [R3+0xa00]", "samples": 341, "samples_not_issued": 298, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 263, "stall_not_selected": 13, "stall_selected": 11, "stall_wait": 54}},
+     {"offset": 2720, "sass": "LDSM.16.M88.4 R24, [R3+0xf00]", "samples": 349, "samples_not_issued": 295, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 282, "stall_not_selected": 13, "stall_selected": 14, "stall_wait": 40}},
+     {"offset": 2736, "sass": "LDSM.16.M88.4 R64, [R3+0x20]", "samples": 379, "samples_not_issued": 325, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 322, "stall_not_selected": 14, "stall_selected": 13, "stall_wait": 30}},
+     {"offset": 2752, "sass": "LDSM.16.M88.4 R72, [R116+0x20]", "samples": 396, "samples_not_issued": 348, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 332, "stall_not_selected": 11, "stall_selected": 19, "stall_wait": 34}},
+     {"offset": 2768, "sass": "LDSM.16.M88.4 R76, [R117+0x520]", "samples": 358, "samples_not_issued": 323, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 297, "stall_not_selected": 5, "stall_selected": 14, "stall_wait": 42}},
+     {"offset": 2784, "sass": "LDSM.16.M88.4 R84, [R3+0x520]", "samples": 372, "samples_not_issued": 335, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 296, "stall_not_selected": 11, "stall_selected": 12, "stall_wait": 53}},
+     {"offset": 2800, "sass": "LDSM.16.M88.4 R92, [R3+0xa20]", "samples": 336, "samples_not_issued": 306, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 272, "stall_not_selected": 6, "stall_selected": 11, "stall_wait": 47}},
+     {"offset": 2816, "sass": "LDSM.16.M88.4 R100, [R3+0xf20]", "samples": 373, "samples_not_issued": 332, "executed": 221184, "l1_wavefronts_shared": 884736, "l1_wavefronts_shared_ideal": 884736, "stalls": {"stall_mio": 295, "stall_not_selected": 6, "stall_selected": 18, "stall_wait": 54}},
+     {"offset": 2832, "sass": "HMMA.1688.F32 R28, R4, R8, R28", "samples": 4012, "samples_not_issued": 3476, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 3, "stall_math": 3730, "stall_not_selected": 264, "stall_selected": 15}},
+     {"offset": 2848, "sass": "HMMA.1688.F32 R32, R4, R10, R32", "samples": 695, "samples_not_issued": 579, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 621, "stall_not_selected": 32, "stall_selected": 13, "stall_wait": 29}},
+     {"offset": 2864, "sass": "HMMA.1688.F32 R36, R4, R12, R36", "samples": 353, "samples_not_issued": 279, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 283, "stall_not_selected": 8, "stall_selected": 17, "stall_wait": 44}},
+     {"offset": 2880, "sass": "HMMA.1688.F32 R40, R4, R14, R40", "samples": 406, "samples_not_issued": 326, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 339, "stall_not_selected": 11, "stall_selected": 15, "stall_wait": 40}},
+     {"offset": 2896, "sass": "HMMA.1688.F32 R44, R16, R8, R44", "samples": 369, "samples_not_issued": 302, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 298, "stall_not_selected": 11, "stall_selected": 16, "stall_wait": 44}},
+     {"offset": 2912, "sass": "HMMA.1688.F32 R48, R16, R10, R48", "samples": 384, "samples_not_issued": 327, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 316, "stall_not_selected": 12, "stall_selected": 13, "stall_wait": 43}},
+     {"offset": 2928, "sass": "HMMA.1688.F32 R52, R16, R12, R52", "samples": 411, "samples_not_issued": 355, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 331, "stall_not_selected": 10, "stall_selected": 22, "stall_wait": 48}},
+     {"offset": 2944, "sass": "HMMA.1688.F32 R56, R16, R14, R56", "samples": 431, "samples_not_issued": 378, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 341, "stall_not_selected": 12, "stall_selected": 23, "stall_wait": 55}},
+     {"offset": 2960, "sass": "HMMA.1688.F32 R60, R20, R8, R60", "samples": 553, "samples_not_issued": 497, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 484, "stall_not_selected": 23, "stall_selected": 9, "stall_short_sb": 3, "stall_wait": 33}},
+     {"offset": 2976, "sass": "HMMA.1688.F32 R68, R20, R10, R68", "samples": 367, "samples_not_issued": 335, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 311, "stall_not_selected": 9, "stall_selected": 16, "stall_wait": 31}},
+     {"offset": 2992, "sass": "HMMA.1688.F32 R80, R20, R12, R80", "samples": 450, "samples_not_issued": 413, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 378, "stall_not_selected": 17, "stall_selected": 11, "stall_wait": 44}},
+     {"offset": 3008, "sass": "HMMA.1688.F32 R88, R20, R14, R88", "samples": 418, "samples_not_issued": 383, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 352, "stall_not_selected": 11, "stall_selected": 11, "stall_wait": 44}},
+     {"offset": 3024, "sass": "HMMA.1688.F32 R96, R24, R8, R96", "samples": 491, "samples_not_issued": 439, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 405, "stall_not_selected": 16, "stall_selected": 18, "stall_short_sb": 1, "stall_wait": 51}},
+     {"offset": 3040, "sass": "HMMA.1688.F32 R108, R24, R10, R108", "samples": 434, "samples_not_issued": 403, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 372, "stall_not_selected": 12, "stall_selected": 14, "stall_wait": 36}},
+     {"offset": 3056, "sass": "HMMA.1688.F32 R112, R24, R12, R112", "samples": 420, "samples_not_issued": 390, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 345, "stall_not_selected": 14, "stall_selected": 13, "stall_wait": 48}},
+     {"offset": 3072, "sass": "HMMA.1688.F32 R104, R24, R14, R104", "samples": 419, "samples_not_issued": 391, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 372, "stall_not_selected": 11, "stall_selected": 8, "stall_wait": 28}},
+     {"offset": 3088, "sass": "HMMA.1688.F32 R28, R6, R9, R28", "samples": 441, "samples_not_issued": 406, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 356, "stall_not_selected": 14, "stall_selected": 16, "stall_wait": 55}},
+     {"offset": 3104, "sass": "HMMA.1688.F32 R32, R6, R11, R32", "samples": 400, "samples_not_issued": 366, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 334, "stall_not_selected": 14, "stall_selected": 13, "stall_wait": 39}},
+     {"offset": 3120, "sass": "HMMA.1688.F32 R36, R6, R13, R36", "samples": 446, "samples_not_issued": 414, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 386, "stall_not_selected": 11, "stall_selected": 18, "stall_wait": 31}},
+     {"offset": 3136, "sass": "HMMA.1688.F32 R40, R6, R15, R40", "samples": 403, "samples_not_issued": 372, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 334, "stall_not_selected": 14, "stall_selected": 6, "stall_wait": 49}},
+     {"offset": 3152, "sass": "HMMA.1688.F32 R44, R18, R9, R44", "samples": 449, "samples_not_issued": 415, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 380, "stall_not_selected": 19, "stall_selected": 9, "stall_wait": 41}},
+     {"offset": 3168, "sass": "HMMA.1688.F32 R48, R18, R11, R48", "samples": 462, "samples_not_issued": 426, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 397, "stall_not_selected": 16, "stall_selected": 13, "stall_wait": 36}},
+     {"offset": 3184, "sass": "HMMA.1688.F32 R52, R18, R13, R52", "samples": 465, "samples_not_issued": 427, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 393, "stall_not_selected": 13, "stall_selected": 17, "stall_wait": 42}},
+     {"offset": 3200, "sass": "HMMA.1688.F32 R56, R18, R15, R56", "samples": 447, "samples_not_issued": 415, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 380, "stall_not_selected": 14, "stall_selected": 12, "stall_wait": 41}},
+     {"offset": 3216, "sass": "HMMA.1688.F32 R60, R22, R9, R60", "samples": 427, "samples_not_issued": 397, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 352, "stall_not_selected": 12, "stall_selected": 14, "stall_wait": 49}},
+     {"offset": 3232, "sass": "HMMA.1688.F32 R68, R22, R11, R68", "samples": 457, "samples_not_issued": 423, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 392, "stall_not_selected": 13, "stall_selected": 11, "stall_wait": 41}},
+     {"offset": 3248, "sass": "HMMA.1688.F32 R80, R22, R13, R80", "samples": 430, "samples_not_issued": 390, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 370, "stall_not_selected": 14, "stall_selected": 11, "stall_wait": 35}},
+     {"offset": 3264, "sass": "HMMA.1688.F32 R88, R22, R15, R88", "samples": 413, "samples_not_issued": 375, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 344, "stall_not_selected": 15, "stall_selected": 8, "stall_wait": 46}},
+     {"offset": 3280, "sass": "HMMA.1688.F32 R96, R26, R9, R96", "samples": 525, "samples_not_issued": 476, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 461, "stall_not_selected": 19, "stall_selected": 14, "stall_wait": 31}},
+     {"offset": 3296, "sass": "HMMA.1688.F32 R108, R26, R11, R108", "samples": 649, "samples_not_issued": 588, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 579, "stall_not_selected": 26, "stall_selected": 10, "stall_wait": 34}},
+     {"offset": 3312, "sass": "HMMA.1688.F32 R112, R26, R13, R112", "samples": 799, "samples_not_issued": 722, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 712, "stall_not_selected": 42, "stall_selected": 12, "stall_wait": 33}},
+     {"offset": 3328, "sass": "HMMA.1688.F32 R104, R26, R15, R104", "samples": 1075, "samples_not_issued": 969, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 959, "stall_not_selected": 56, "stall_selected": 14, "stall_wait": 46}},
+     {"offset": 3344, "sass": "HMMA.1688.F32 R28, R64, R72, R28", "samples": 1034, "samples_not_issued": 921, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 928, "stall_not_selected": 56, "stall_selected": 16, "stall_wait": 34}},
+     {"offset": 3360, "sass": "HMMA.1688.F32 R32, R64, R74, R32", "samples": 978, "samples_not_issued": 869, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 872, "stall_not_selected": 47, "stall_selected": 12, "stall_wait": 47}},
+     {"offset": 3376, "sass": "HMMA.1688.F32 R36, R64, R76, R36", "samples": 819, "samples_not_issued": 722, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 732, "stall_not_selected": 42, "stall_selected": 10, "stall_wait": 35}},
+     {"offset": 3392, "sass": "HMMA.1688.F32 R40, R64, R78, R40", "samples": 783, "samples_not_issued": 701, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 698, "stall_not_selected": 40, "stall_selected": 11, "stall_wait": 34}},
+     {"offset": 3408, "sass": "HMMA.1688.F32 R44, R84, R72, R44", "samples": 823, "samples_not_issued": 740, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 735, "stall_not_selected": 36, "stall_selected": 20, "stall_wait": 32}},
+     {"offset": 3424, "sass": "HMMA.1688.F32 R48, R84, R74, R48", "samples": 1004, "samples_not_issued": 916, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 893, "stall_not_selected": 46, "stall_selected": 14, "stall_wait": 51}},
+     {"offset": 3440, "sass": "HMMA.1688.F32 R52, R84, R76, R52", "samples": 1144, "samples_not_issued": 1017, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 1031, "stall_not_selected": 68, "stall_selected": 12, "stall_wait": 32}},
+     {"offset": 3456, "sass": "HMMA.1688.F32 R56, R84, R78, R56", "samples": 1189, "samples_not_issued": 1061, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1068, "stall_not_selected": 65, "stall_selected": 13, "stall_wait": 43}},
+     {"offset": 3472, "sass": "HMMA.1688.F32 R60, R92, R72, R60", "samples": 1109, "samples_not_issued": 995, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 982, "stall_not_selected": 61, "stall_selected": 16, "stall_wait": 49}},
+     {"offset": 3488, "sass": "HMMA.1688.F32 R68, R92, R74, R68", "samples": 965, "samples_not_issued": 862, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 860, "stall_not_selected": 46, "stall_selected": 15, "stall_wait": 43}},
+     {"offset": 3504, "sass": "HMMA.1688.F32 R80, R92, R76, R80", "samples": 866, "samples_not_issued": 786, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 773, "stall_not_selected": 41, "stall_selected": 11, "stall_wait": 40}},
+     {"offset": 3520, "sass": "HMMA.1688.F32 R88, R92, R78, R88", "samples": 668, "samples_not_issued": 597, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 584, "stall_not_selected": 31, "stall_selected": 13, "stall_wait": 40}},
+     {"offset": 3536, "sass": "HMMA.1688.F32 R96, R100, R72, R96", "samples": 621, "samples_not_issued": 569, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 545, "stall_not_selected": 21, "stall_selected": 15, "stall_wait": 40}},
+     {"offset": 3552, "sass": "HMMA.1688.F32 R108, R100, R74, R108", "samples": 496, "samples_not_issued": 453, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 431, "stall_not_selected": 20, "stall_selected": 13, "stall_wait": 32}},
+     {"offset": 3568, "sass": "HMMA.1688.F32 R112, R100, R76, R112", "samples": 532, "samples_not_issued": 478, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 452, "stall_not_selected": 28, "stall_selected": 16, "stall_wait": 36}},
+     {"offset": 3584, "sass": "HMMA.1688.F32 R104, R100, R78, R104", "samples": 503, "samples_not_issued": 463, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 430, "stall_not_selected": 18, "stall_selected": 16, "stall_wait": 39}},
+     {"offset": 3600, "sass": "HMMA.1688.F32 R28, R66, R73, R28", "samples": 471, "samples_not_issued": 436, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 406, "stall_not_selected": 14, "stall_selected": 13, "stall_wait": 38}},
+     {"offset": 3616, "sass": "HMMA.1688.F32 R32, R66, R75, R32", "samples": 444, "samples_not_issued": 404, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 380, "stall_not_selected": 14, "stall_selected": 12, "stall_wait": 38}},
+     {"offset": 3632, "sass": "HMMA.1688.F32 R36, R66, R77, R36", "samples": 426, "samples_not_issued": 388, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 365, "stall_not_selected": 10, "stall_selected": 8, "stall_wait": 42}},
+     {"offset": 3648, "sass": "HMMA.1688.F32 R40, R66, R79, R40", "samples": 440, "samples_not_issued": 387, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 374, "stall_not_selected": 18, "stall_selected": 11, "stall_wait": 37}},
+     {"offset": 3664, "sass": "HMMA.1688.F32 R44, R86, R73, R44", "samples": 446, "samples_not_issued": 385, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 388, "stall_not_selected": 16, "stall_selected": 12, "stall_wait": 30}},
+     {"offset": 3680, "sass": "HMMA.1688.F32 R48, R86, R75, R48", "samples": 395, "samples_not_issued": 329, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 323, "stall_not_selected": 22, "stall_selected": 9, "stall_wait": 41}},
+     {"offset": 3696, "sass": "HMMA.1688.F32 R52, R86, R77, R52", "samples": 390, "samples_not_issued": 328, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 317, "stall_not_selected": 10, "stall_selected": 12, "stall_wait": 50}},
+     {"offset": 3712, "sass": "HMMA.1688.F32 R56, R86, R79, R56", "samples": 329, "samples_not_issued": 266, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 258, "stall_not_selected": 17, "stall_selected": 16, "stall_wait": 37}},
+     {"offset": 3728, "sass": "HMMA.1688.F32 R60, R94, R73, R60", "samples": 332, "samples_not_issued": 264, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 273, "stall_not_selected": 12, "stall_selected": 14, "stall_wait": 33}},
+     {"offset": 3744, "sass": "HMMA.1688.F32 R68, R94, R75, R68", "samples": 373, "samples_not_issued": 323, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 310, "stall_not_selected": 7, "stall_selected": 13, "stall_wait": 42}},
+     {"offset": 3760, "sass": "HMMA.1688.F32 R80, R94, R77, R80", "samples": 369, "samples_not_issued": 311, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 300, "stall_not_selected": 9, "stall_selected": 20, "stall_wait": 39}},
+     {"offset": 3776, "sass": "HMMA.1688.F32 R88, R94, R79, R88", "samples": 348, "samples_not_issued": 303, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 290, "stall_not_selected": 6, "stall_selected": 18, "stall_wait": 33}},
+     {"offset": 3792, "sass": "HMMA.1688.F32 R96, R102, R73, R96", "samples": 329, "samples_not_issued": 290, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_math": 270, "stall_not_selected": 8, "stall_selected": 16, "stall_wait": 34}},
+     {"offset": 3808, "sass": "HMMA.1688.F32 R108, R102, R75, R108", "samples": 332, "samples_not_issued": 303, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 268, "stall_not_selected": 6, "stall_selected": 13, "stall_wait": 45}},
+     {"offset": 3824, "sass": "HMMA.1688.F32 R112, R102, R77, R112", "samples": 341, "samples_not_issued": 314, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 273, "stall_not_selected": 7, "stall_selected": 14, "stall_wait": 47}},
+     {"offset": 3840, "sass": "HMMA.1688.F32 R104, R102, R79, R104", "samples": 318, "samples_not_issued": 289, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 252, "stall_not_selected": 8, "stall_selected": 16, "stall_wait": 42}},
+     {"offset": 3856, "sass": "@!P0  BRA 0x700e9ea00", "samples": 19, "samples_not_issued": 0, "executed": 221184, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 19}},
+     {"offset": 3872, "sass": "S2R R3, SR_TID.X", "samples": 69, "samples_not_issued": 49, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_mio": 2, "stall_selected": 20, "stall_wait": 47}},
+     {"offset": 3888, "sass": "IMAD.MOV.U32 R10, RZ, RZ, c[0x0][0x17c]", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 3904, "sass": "IADD3 R9, -R124, c[0x0][0x178], RZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 3920, "sass": "BSSY B0, 0x700e9fb80", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 3936, "sass": "S2R R4, SR_CTAID.Y", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 3952, "sass": "LOP3.LUT P3, RZ, R10, 0x1, RZ, 0xc0, !PT", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 3968, "sass": "SHF.R.U32.HI R0, RZ, 0x1, R3", "samples": 41, "samples_not_issued": 36, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_short_sb": 40}},
+     {"offset": 3984, "sass": "IMAD.SHL.U32 R8, R3, 0x2, RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 4000, "sass": "LOP3.LUT R5, R3, 0x1f, RZ, 0xc0, !PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 4016, "sass": "LOP3.LUT R0, R0, 0x7fffffc0, RZ, 0xc0, !PT", "samples": 3, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 3}},
+     {"offset": 4032, "sass": "IMAD.SHL.U32 R4, R4, 0x80, RZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4048, "sass": "LOP3.LUT R8, R8, 0x6, RZ, 0xc0, !PT", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4064, "sass": "LEA.HI R0, R5, R0, RZ, 0x1e", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 4080, "sass": "SHF.R.S32.HI R5, RZ, 0x1f, R4", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4096, "sass": "LOP3.LUT R8, R8, 0x60, R3, 0xf8, !PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1}},
+     {"offset": 4112, "sass": "IMAD R7, R0, c[0x0][0x17c], RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 4128, "sass": "IMAD.WIDE R2, R124, c[0x0][0x17c], R4", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 4144, "sass": "IMAD R11, R10, 0x8, R7", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 4160, "sass": "IMAD.IADD R7, R8, 0x1, R7", "samples": 5, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 4}},
+     {"offset": 4176, "sass": "IMAD.IADD R5, R8, 0x1, R11", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 4192, "sass": "IADD3 R11, -R4, c[0x0][0x17c], RZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4208, "sass": "IADD3 R13, P0, R2, R7, RZ", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1}},
+     {"offset": 4224, "sass": "IADD3 R12, P2, R2, R5, RZ", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1}},
+     {"offset": 4240, "sass": "LEA.HI.X.SX32 R14, R7, R3, 0x1, P0", "samples": 3, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 3}},
+     {"offset": 4256, "sass": "P2R R4, PR, RZ, 0x8", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4272, "sass": "LEA.HI.X.SX32 R7, R5, R3, 0x1, P2", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 4288, "sass": "ISETP.GE.AND P1, PT, R8, R11, PT", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 4304, "sass": "LEA R4, P0, R13, c[0x0][0x160], 0x1", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 4320, "sass": "LEA R6, P2, R12, c[0x0][0x160], 0x1", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 4336, "sass": "ISETP.GE.OR P4, PT, R0, R9, P1", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 4352, "sass": "LEA.HI.X R5, R13, c[0x0][0x164], R14, 0x1, P0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4368, "sass": "LEA.HI.X R7, R12, c[0x0][0x164], R7, 0x1, P2", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4384, "sass": "@!P3  BRA 0x700e9f990", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4400, "sass": "IADD3 R14, R8, 0x10, RZ", "samples": 2, "samples_not_issued": 2, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 2}},
+     {"offset": 4416, "sass": "BSSY B1, 0x700e9f530", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4432, "sass": "IADD3 R12, R8, 0x8, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4448, "sass": "IADD3 R16, R8, 0x18, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4464, "sass": "ISETP.GE.AND P3, PT, R14, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4480, "sass": "ISETP.GE.AND P2, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4496, "sass": "ISETP.GE.AND P0, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4512, "sass": "IADD3 R14, R0, 0x8, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4528, "sass": "@P4   BRA 0x700e9f520", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4544, "sass": "IADD3 R12, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4560, "sass": "F2FP.F16.F32.PACK_AB R28, RZ, R28", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4576, "sass": "ISETP.GE.AND P4, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4592, "sass": "STG.E.U16 [R4.64], R28", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4608, "sass": "@!P4  F2FP.F16.F32.PACK_AB R29, RZ, R29", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4624, "sass": "@!P4  STG.E.U16 [R4.64+0x2], R29", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4640, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4656, "sass": "ISETP.GE.OR P5, PT, R14, R9, P1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4672, "sass": "BSSY B1, 0x700e9f5e0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4688, "sass": "ISETP.GE.OR P4, PT, R0, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4704, "sass": "@P5   BRA 0x700e9f5d0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4720, "sass": "IADD3 R12, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4736, "sass": "F2FP.F16.F32.PACK_AB R30, RZ, R30", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4752, "sass": "ISETP.GE.AND P5, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4768, "sass": "STG.E.U16 [R6.64], R30", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4784, "sass": "@!P5  F2FP.F16.F32.PACK_AB R31, RZ, R31", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4800, "sass": "@!P5  STG.E.U16 [R6.64+0x2], R31", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4816, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4832, "sass": "BSSY B1, 0x700e9f670", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4848, "sass": "@P4   BRA 0x700e9f660", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4864, "sass": "IADD3 R12, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4880, "sass": "F2FP.F16.F32.PACK_AB R32, RZ, R32", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4896, "sass": "ISETP.GE.AND P4, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4912, "sass": "STG.E.U16 [R4.64+0x10], R32", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4928, "sass": "@!P4  F2FP.F16.F32.PACK_AB R33, RZ, R33", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4944, "sass": "@!P4  STG.E.U16 [R4.64+0x12], R33", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4960, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4976, "sass": "ISETP.GE.OR P4, PT, R14, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 4992, "sass": "BSSY B1, 0x700e9f720", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5008, "sass": "ISETP.GE.OR P5, PT, R0, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5024, "sass": "@P4   BRA 0x700e9f710", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5040, "sass": "IADD3 R12, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5056, "sass": "F2FP.F16.F32.PACK_AB R34, RZ, R34", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5072, "sass": "ISETP.GE.AND P4, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5088, "sass": "STG.E.U16 [R6.64+0x10], R34", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5104, "sass": "@!P4  F2FP.F16.F32.PACK_AB R35, RZ, R35", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5120, "sass": "@!P4  STG.E.U16 [R6.64+0x12], R35", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5136, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5152, "sass": "BSSY B1, 0x700e9f7c0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5168, "sass": "ISETP.GE.OR P4, PT, R14, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5184, "sass": "@P5   BRA 0x700e9f7b0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5200, "sass": "IADD3 R12, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5216, "sass": "F2FP.F16.F32.PACK_AB R36, RZ, R36", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5232, "sass": "ISETP.GE.AND P5, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5248, "sass": "STG.E.U16 [R4.64+0x20], R36", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5264, "sass": "@!P5  F2FP.F16.F32.PACK_AB R37, RZ, R37", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5280, "sass": "@!P5  STG.E.U16 [R4.64+0x22], R37", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5296, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5312, "sass": "BSSY B1, 0x700e9f860", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5328, "sass": "ISETP.GE.OR P5, PT, R0, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5344, "sass": "@P4   BRA 0x700e9f850", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5360, "sass": "IADD3 R12, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5376, "sass": "F2FP.F16.F32.PACK_AB R38, RZ, R38", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5392, "sass": "ISETP.GE.AND P4, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5408, "sass": "STG.E.U16 [R6.64+0x20], R38", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5424, "sass": "@!P4  F2FP.F16.F32.PACK_AB R39, RZ, R39", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5440, "sass": "@!P4  STG.E.U16 [R6.64+0x22], R39", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5456, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5472, "sass": "BSSY B1, 0x700e9f900", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5488, "sass": "ISETP.GE.OR P4, PT, R14, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5504, "sass": "@P5   BRA 0x700e9f8f0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5520, "sass": "IADD3 R12, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5536, "sass": "F2FP.F16.F32.PACK_AB R40, RZ, R40", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5552, "sass": "ISETP.GE.AND P5, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5568, "sass": "STG.E.U16 [R4.64+0x30], R40", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5584, "sass": "@!P5  F2FP.F16.F32.PACK_AB R41, RZ, R41", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5600, "sass": "@!P5  STG.E.U16 [R4.64+0x32], R41", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5616, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5632, "sass": "@P4   BRA 0x700e9fb70", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5648, "sass": "F2FP.F16.F32.PACK_AB R42, RZ, R42", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5664, "sass": "IADD3 R4, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5680, "sass": "STG.E.U16 [R6.64+0x30], R42", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5696, "sass": "ISETP.GE.AND P4, PT, R4, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5712, "sass": "@P4   BRA 0x700e9fb70", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5728, "sass": "F2FP.F16.F32.PACK_AB R43, RZ, R43", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5744, "sass": "STG.E.U16 [R6.64+0x32], R43", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5760, "sass": "BRA 0x700e9fb70", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5776, "sass": "IADD3 R14, R8, 0x8, RZ", "samples": 5, "samples_not_issued": 5, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 2, "stall_no_inst": 3}},
+     {"offset": 5792, "sass": "IADD3 R12, R0, 0x8, RZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 2}},
+     {"offset": 5808, "sass": "ISETP.GE.AND P2, PT, R14, R11, PT", "samples": 4, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 4}},
+     {"offset": 5824, "sass": "IADD3 R14, R8, 0x10, RZ", "samples": 5, "samples_not_issued": 3, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_wait": 3}},
+     {"offset": 5840, "sass": "@!P4  F2FP.F16.F32.PACK_AB R29, R29, R28", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 5856, "sass": "ISETP.GE.OR P6, PT, R12, R9, P1", "samples": 4, "samples_not_issued": 3, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 3}},
+     {"offset": 5872, "sass": "ISETP.GE.OR P0, PT, R0, R9, P2", "samples": 2, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 2}},
+     {"offset": 5888, "sass": "@!P4  STG.E [R4.64], R29", "samples": 9, "samples_not_issued": 8, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 8, "stall_selected": 1}},
+     {"offset": 5904, "sass": "ISETP.GE.AND P3, PT, R14, R11, PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 5920, "sass": "ISETP.GE.OR P5, PT, R12, R9, P2", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 5936, "sass": "ISETP.GE.OR P4, PT, R0, R9, P3", "samples": 3, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 2}},
+     {"offset": 5952, "sass": "IADD3 R14, R8, 0x18, RZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 5968, "sass": "@!P6  F2FP.F16.F32.PACK_AB R31, R31, R30", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 5984, "sass": "@!P0  F2FP.F16.F32.PACK_AB R33, R33, R32", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 6000, "sass": "@!P6  STG.E [R6.64], R31", "samples": 8, "samples_not_issued": 8, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 8}},
+     {"offset": 6016, "sass": "@!P5  F2FP.F16.F32.PACK_AB R35, R35, R34", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 6032, "sass": "@!P4  F2FP.F16.F32.PACK_AB R37, R37, R36", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 6048, "sass": "@!P0  STG.E [R4.64+0x10], R33", "samples": 9, "samples_not_issued": 7, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 7, "stall_selected": 2}},
+     {"offset": 6064, "sass": "ISETP.GE.AND P0, PT, R14, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6080, "sass": "ISETP.GE.OR P6, PT, R12, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6096, "sass": "@!P5  STG.E [R6.64+0x10], R35", "samples": 21, "samples_not_issued": 17, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 19, "stall_selected": 2}},
+     {"offset": 6112, "sass": "ISETP.GE.OR P5, PT, R12, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6128, "sass": "@!P4  STG.E [R4.64+0x20], R37", "samples": 19, "samples_not_issued": 17, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 15, "stall_mio": 1, "stall_wait": 3}},
+     {"offset": 6144, "sass": "ISETP.GE.OR P4, PT, R0, R9, P0", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 6160, "sass": "@!P6  F2FP.F16.F32.PACK_AB R39, R39, R38", "samples": 4, "samples_not_issued": 4, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 4}},
+     {"offset": 6176, "sass": "@!P5  F2FP.F16.F32.PACK_AB R43, R43, R42", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6192, "sass": "@!P6  STG.E [R6.64+0x20], R39", "samples": 18, "samples_not_issued": 12, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_lg": 15, "stall_mio": 1, "stall_wait": 1}},
+     {"offset": 6208, "sass": "@!P4  F2FP.F16.F32.PACK_AB R41, R41, R40", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6224, "sass": "@!P4  STG.E [R4.64+0x30], R41", "samples": 18, "samples_not_issued": 17, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 13, "stall_wait": 5}},
+     {"offset": 6240, "sass": "@!P5  STG.E [R6.64+0x30], R43", "samples": 18, "samples_not_issued": 13, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 15, "stall_mio": 1, "stall_not_selected": 1, "stall_wait": 1}},
+     {"offset": 6256, "sass": "BSYNC B0", "samples": 108, "samples_not_issued": 93, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_long_sb": 107, "stall_selected": 1}},
+     {"offset": 6272, "sass": "IADD3 R12, R0, 0x10, RZ", "samples": 11, "samples_not_issued": 10, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 7, "stall_selected": 1, "stall_wait": 3}},
+     {"offset": 6288, "sass": "BSSY B0, 0x700ea0320", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 6304, "sass": "LOP3.LUT P6, RZ, R10, 0x1, RZ, 0xc0, !PT", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 6320, "sass": "IMAD R5, R12, c[0x0][0x17c], RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1}},
+     {"offset": 6336, "sass": "IMAD.IADD R7, R8, 0x1, R5", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6352, "sass": "IMAD R5, R10, 0x8, R5", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6368, "sass": "IADD3 R6, P4, R2, R7, RZ", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6384, "sass": "IMAD.IADD R13, R8, 0x1, R5", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 6400, "sass": "LEA.HI.X.SX32 R5, R7, R3, 0x1, P4", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 6416, "sass": "LEA R4, P4, R6, c[0x0][0x160], 0x1", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 6432, "sass": "IADD3 R7, P5, R2, R13, RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 6448, "sass": "LEA.HI.X R5, R6, c[0x0][0x164], R5, 0x1, P4", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 6464, "sass": "LEA.HI.X.SX32 R14, R13, R3, 0x1, P5", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6480, "sass": "LEA R6, P4, R7, c[0x0][0x160], 0x1", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_selected": 1}},
+     {"offset": 6496, "sass": "ISETP.GE.OR P5, PT, R12, R9, P1", "samples": 5, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_wait": 3}},
+     {"offset": 6512, "sass": "LEA.HI.X R7, R7, c[0x0][0x164], R14, 0x1, P4", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 6528, "sass": "@!P6  BRA 0x700ea0190", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 6544, "sass": "IADD3 R14, R0, 0x18, RZ", "samples": 1, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 6560, "sass": "BSSY B1, 0x700e9fd40", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6576, "sass": "ISETP.GE.OR P4, PT, R14, R9, P1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6592, "sass": "@P5   BRA 0x700e9fd30", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6608, "sass": "IADD3 R16, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6624, "sass": "F2FP.F16.F32.PACK_AB R44, RZ, R44", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6640, "sass": "ISETP.GE.AND P5, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6656, "sass": "STG.E.U16 [R4.64], R44", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6672, "sass": "@!P5  F2FP.F16.F32.PACK_AB R45, RZ, R45", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6688, "sass": "@!P5  STG.E.U16 [R4.64+0x2], R45", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6704, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6720, "sass": "BSSY B1, 0x700e9fde0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6736, "sass": "ISETP.GE.OR P5, PT, R12, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6752, "sass": "@P4   BRA 0x700e9fdd0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6768, "sass": "IADD3 R16, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6784, "sass": "F2FP.F16.F32.PACK_AB R46, RZ, R46", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6800, "sass": "ISETP.GE.AND P4, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6816, "sass": "STG.E.U16 [R6.64], R46", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6832, "sass": "@!P4  F2FP.F16.F32.PACK_AB R47, RZ, R47", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6848, "sass": "@!P4  STG.E.U16 [R6.64+0x2], R47", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6864, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6880, "sass": "BSSY B1, 0x700e9fe80", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6896, "sass": "ISETP.GE.OR P4, PT, R14, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6912, "sass": "@P5   BRA 0x700e9fe70", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6928, "sass": "IADD3 R16, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6944, "sass": "F2FP.F16.F32.PACK_AB R48, RZ, R48", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6960, "sass": "ISETP.GE.AND P5, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6976, "sass": "STG.E.U16 [R4.64+0x10], R48", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 6992, "sass": "@!P5  F2FP.F16.F32.PACK_AB R49, RZ, R49", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7008, "sass": "@!P5  STG.E.U16 [R4.64+0x12], R49", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7024, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7040, "sass": "BSSY B1, 0x700e9ff20", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7056, "sass": "ISETP.GE.OR P5, PT, R12, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7072, "sass": "@P4   BRA 0x700e9ff10", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7088, "sass": "IADD3 R16, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7104, "sass": "F2FP.F16.F32.PACK_AB R50, RZ, R50", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7120, "sass": "ISETP.GE.AND P4, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7136, "sass": "STG.E.U16 [R6.64+0x10], R50", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7152, "sass": "@!P4  F2FP.F16.F32.PACK_AB R51, RZ, R51", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7168, "sass": "@!P4  STG.E.U16 [R6.64+0x12], R51", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7184, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7200, "sass": "BSSY B1, 0x700e9ffc0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7216, "sass": "ISETP.GE.OR P4, PT, R14, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7232, "sass": "@P5   BRA 0x700e9ffb0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7248, "sass": "IADD3 R16, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7264, "sass": "F2FP.F16.F32.PACK_AB R52, RZ, R52", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7280, "sass": "ISETP.GE.AND P5, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7296, "sass": "STG.E.U16 [R4.64+0x20], R52", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7312, "sass": "@!P5  F2FP.F16.F32.PACK_AB R53, RZ, R53", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7328, "sass": "@!P5  STG.E.U16 [R4.64+0x22], R53", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7344, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7360, "sass": "BSSY B1, 0x700ea0060", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7376, "sass": "ISETP.GE.OR P5, PT, R12, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7392, "sass": "@P4   BRA 0x700ea0050", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7408, "sass": "IADD3 R12, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7424, "sass": "F2FP.F16.F32.PACK_AB R54, RZ, R54", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7440, "sass": "ISETP.GE.AND P4, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7456, "sass": "STG.E.U16 [R6.64+0x20], R54", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7472, "sass": "@!P4  F2FP.F16.F32.PACK_AB R55, RZ, R55", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7488, "sass": "@!P4  STG.E.U16 [R6.64+0x22], R55", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7504, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7520, "sass": "BSSY B1, 0x700ea0100", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7536, "sass": "ISETP.GE.OR P4, PT, R14, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7552, "sass": "@P5   BRA 0x700ea00f0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7568, "sass": "IADD3 R12, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7584, "sass": "F2FP.F16.F32.PACK_AB R56, RZ, R56", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7600, "sass": "ISETP.GE.AND P5, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7616, "sass": "STG.E.U16 [R4.64+0x30], R56", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7632, "sass": "@!P5  F2FP.F16.F32.PACK_AB R57, RZ, R57", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7648, "sass": "@!P5  STG.E.U16 [R4.64+0x32], R57", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7664, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7680, "sass": "@P4   BRA 0x700ea0310", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7696, "sass": "F2FP.F16.F32.PACK_AB R58, RZ, R58", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7712, "sass": "IADD3 R4, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7728, "sass": "STG.E.U16 [R6.64+0x30], R58", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7744, "sass": "ISETP.GE.AND P4, PT, R4, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7760, "sass": "@P4   BRA 0x700ea0310", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7776, "sass": "F2FP.F16.F32.PACK_AB R59, RZ, R59", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7792, "sass": "STG.E.U16 [R6.64+0x32], R59", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7808, "sass": "BRA 0x700ea0310", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7824, "sass": "IADD3 R14, R0, 0x18, RZ", "samples": 6, "samples_not_issued": 5, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 2, "stall_math": 1, "stall_no_inst": 3}},
+     {"offset": 7840, "sass": "@!P5  F2FP.F16.F32.PACK_AB R45, R45, R44", "samples": 3, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_wait": 1}},
+     {"offset": 7856, "sass": "ISETP.GE.OR P4, PT, R14, R9, P1", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7872, "sass": "@!P5  STG.E [R4.64], R45", "samples": 47, "samples_not_issued": 44, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 43, "stall_mio": 2, "stall_wait": 2}},
+     {"offset": 7888, "sass": "ISETP.GE.OR P5, PT, R12, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7904, "sass": "@!P4  F2FP.F16.F32.PACK_AB R47, R47, R46", "samples": 3, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_wait": 2}},
+     {"offset": 7920, "sass": "@!P5  F2FP.F16.F32.PACK_AB R49, R49, R48", "samples": 4, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_selected": 1, "stall_wait": 2}},
+     {"offset": 7936, "sass": "@!P4  STG.E [R6.64], R47", "samples": 22, "samples_not_issued": 21, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 21, "stall_selected": 1}},
+     {"offset": 7952, "sass": "ISETP.GE.OR P4, PT, R14, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 7968, "sass": "@!P5  STG.E [R4.64+0x10], R49", "samples": 17, "samples_not_issued": 14, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 16, "stall_wait": 1}},
+     {"offset": 7984, "sass": "ISETP.GE.OR P5, PT, R12, R9, P3", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 8000, "sass": "@!P4  F2FP.F16.F32.PACK_AB R51, R51, R50", "samples": 13, "samples_not_issued": 8, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 2, "stall_not_selected": 1, "stall_wait": 10}},
+     {"offset": 8016, "sass": "@!P5  F2FP.F16.F32.PACK_AB R53, R53, R52", "samples": 4, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_wait": 2}},
+     {"offset": 8032, "sass": "@!P4  STG.E [R6.64+0x10], R51", "samples": 13, "samples_not_issued": 11, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 13}},
+     {"offset": 8048, "sass": "ISETP.GE.OR P4, PT, R14, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8064, "sass": "@!P5  STG.E [R4.64+0x20], R53", "samples": 21, "samples_not_issued": 19, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 16, "stall_mio": 4, "stall_selected": 1}},
+     {"offset": 8080, "sass": "ISETP.GE.OR P5, PT, R12, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8096, "sass": "@!P4  F2FP.F16.F32.PACK_AB R55, R55, R54", "samples": 7, "samples_not_issued": 5, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 7}},
+     {"offset": 8112, "sass": "@!P5  F2FP.F16.F32.PACK_AB R57, R57, R56", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_wait": 1}},
+     {"offset": 8128, "sass": "@!P4  STG.E [R6.64+0x20], R55", "samples": 25, "samples_not_issued": 15, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 23, "stall_mio": 1, "stall_selected": 1}},
+     {"offset": 8144, "sass": "ISETP.GE.OR P4, PT, R14, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8160, "sass": "@!P5  STG.E [R4.64+0x30], R57", "samples": 33, "samples_not_issued": 26, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 31, "stall_not_selected": 1, "stall_wait": 1}},
+     {"offset": 8176, "sass": "@!P4  F2FP.F16.F32.PACK_AB R59, R59, R58", "samples": 6, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_wait": 5}},
+     {"offset": 8192, "sass": "@!P4  STG.E [R6.64+0x30], R59", "samples": 32, "samples_not_issued": 28, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 25, "stall_mio": 2, "stall_wait": 5}},
+     {"offset": 8208, "sass": "BSYNC B0", "samples": 154, "samples_not_issued": 139, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_long_sb": 153, "stall_wait": 1}},
+     {"offset": 8224, "sass": "IADD3 R12, R0, 0x20, RZ", "samples": 7, "samples_not_issued": 3, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 4, "stall_wait": 3}},
+     {"offset": 8240, "sass": "BSSY B0, 0x700ea0ab0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8256, "sass": "IMAD R5, R12, c[0x0][0x17c], RZ", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 8272, "sass": "IMAD.IADD R7, R8, 0x1, R5", "samples": 10, "samples_not_issued": 6, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_selected": 3, "stall_wait": 6}},
+     {"offset": 8288, "sass": "IMAD R5, R10, 0x8, R5", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 8304, "sass": "IADD3 R6, P4, R2, R7, RZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 2}},
+     {"offset": 8320, "sass": "IMAD.IADD R13, R8, 0x1, R5", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 8336, "sass": "LEA.HI.X.SX32 R5, R7, R3, 0x1, P4", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 8352, "sass": "LEA R4, P4, R6, c[0x0][0x160], 0x1", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_dispatch": 1, "stall_selected": 1}},
+     {"offset": 8368, "sass": "IADD3 R7, P5, R2, R13, RZ", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 8384, "sass": "LEA.HI.X R5, R6, c[0x0][0x164], R5, 0x1, P4", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8400, "sass": "LEA.HI.X.SX32 R14, R13, R3, 0x1, P5", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 8416, "sass": "LEA R6, P4, R7, c[0x0][0x160], 0x1", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_wait": 1}},
+     {"offset": 8432, "sass": "ISETP.GE.OR P5, PT, R12, R9, P1", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 2}},
+     {"offset": 8448, "sass": "LEA.HI.X R7, R7, c[0x0][0x164], R14, 0x1, P4", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8464, "sass": "@!P6  BRA 0x700ea0920", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 8480, "sass": "IADD3 R14, R0, 0x28, RZ", "samples": 4, "samples_not_issued": 4, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 4}},
+     {"offset": 8496, "sass": "BSSY B1, 0x700ea04d0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8512, "sass": "ISETP.GE.OR P4, PT, R14, R9, P1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8528, "sass": "@P5   BRA 0x700ea04c0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8544, "sass": "IADD3 R16, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8560, "sass": "F2FP.F16.F32.PACK_AB R60, RZ, R60", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8576, "sass": "ISETP.GE.AND P5, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8592, "sass": "STG.E.U16 [R4.64], R60", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8608, "sass": "@!P5  F2FP.F16.F32.PACK_AB R61, RZ, R61", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8624, "sass": "@!P5  STG.E.U16 [R4.64+0x2], R61", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8640, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8656, "sass": "BSSY B1, 0x700ea0570", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8672, "sass": "ISETP.GE.OR P5, PT, R12, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8688, "sass": "@P4   BRA 0x700ea0560", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8704, "sass": "IADD3 R16, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8720, "sass": "F2FP.F16.F32.PACK_AB R62, RZ, R62", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8736, "sass": "ISETP.GE.AND P4, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8752, "sass": "STG.E.U16 [R6.64], R62", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8768, "sass": "@!P4  F2FP.F16.F32.PACK_AB R63, RZ, R63", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8784, "sass": "@!P4  STG.E.U16 [R6.64+0x2], R63", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8800, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8816, "sass": "BSSY B1, 0x700ea0610", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8832, "sass": "ISETP.GE.OR P4, PT, R14, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8848, "sass": "@P5   BRA 0x700ea0600", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8864, "sass": "IADD3 R16, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8880, "sass": "F2FP.F16.F32.PACK_AB R68, RZ, R68", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8896, "sass": "ISETP.GE.AND P5, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8912, "sass": "STG.E.U16 [R4.64+0x10], R68", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8928, "sass": "@!P5  F2FP.F16.F32.PACK_AB R69, RZ, R69", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8944, "sass": "@!P5  STG.E.U16 [R4.64+0x12], R69", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8960, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8976, "sass": "BSSY B1, 0x700ea06b0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 8992, "sass": "ISETP.GE.OR P5, PT, R12, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9008, "sass": "@P4   BRA 0x700ea06a0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9024, "sass": "IADD3 R16, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9040, "sass": "F2FP.F16.F32.PACK_AB R70, RZ, R70", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9056, "sass": "ISETP.GE.AND P4, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9072, "sass": "STG.E.U16 [R6.64+0x10], R70", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9088, "sass": "@!P4  F2FP.F16.F32.PACK_AB R71, RZ, R71", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9104, "sass": "@!P4  STG.E.U16 [R6.64+0x12], R71", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9120, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9136, "sass": "BSSY B1, 0x700ea0750", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9152, "sass": "ISETP.GE.OR P4, PT, R14, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9168, "sass": "@P5   BRA 0x700ea0740", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9184, "sass": "IADD3 R16, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9200, "sass": "F2FP.F16.F32.PACK_AB R80, RZ, R80", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9216, "sass": "ISETP.GE.AND P5, PT, R16, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9232, "sass": "STG.E.U16 [R4.64+0x20], R80", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9248, "sass": "@!P5  F2FP.F16.F32.PACK_AB R81, RZ, R81", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9264, "sass": "@!P5  STG.E.U16 [R4.64+0x22], R81", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9280, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9296, "sass": "BSSY B1, 0x700ea07f0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9312, "sass": "ISETP.GE.OR P5, PT, R12, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9328, "sass": "@P4   BRA 0x700ea07e0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9344, "sass": "IADD3 R12, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9360, "sass": "F2FP.F16.F32.PACK_AB R82, RZ, R82", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9376, "sass": "ISETP.GE.AND P4, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9392, "sass": "STG.E.U16 [R6.64+0x20], R82", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9408, "sass": "@!P4  F2FP.F16.F32.PACK_AB R83, RZ, R83", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9424, "sass": "@!P4  STG.E.U16 [R6.64+0x22], R83", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9440, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9456, "sass": "BSSY B1, 0x700ea0890", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9472, "sass": "ISETP.GE.OR P4, PT, R14, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9488, "sass": "@P5   BRA 0x700ea0880", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9504, "sass": "IADD3 R12, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9520, "sass": "F2FP.F16.F32.PACK_AB R88, RZ, R88", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9536, "sass": "ISETP.GE.AND P5, PT, R12, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9552, "sass": "STG.E.U16 [R4.64+0x30], R88", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9568, "sass": "@!P5  F2FP.F16.F32.PACK_AB R89, RZ, R89", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9584, "sass": "@!P5  STG.E.U16 [R4.64+0x32], R89", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9600, "sass": "BSYNC B1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9616, "sass": "@P4   BRA 0x700ea0aa0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9632, "sass": "F2FP.F16.F32.PACK_AB R90, RZ, R90", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9648, "sass": "IADD3 R4, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9664, "sass": "STG.E.U16 [R6.64+0x30], R90", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9680, "sass": "ISETP.GE.AND P4, PT, R4, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9696, "sass": "@P4   BRA 0x700ea0aa0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9712, "sass": "F2FP.F16.F32.PACK_AB R91, RZ, R91", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9728, "sass": "STG.E.U16 [R6.64+0x32], R91", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9744, "sass": "BRA 0x700ea0aa0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9760, "sass": "IADD3 R14, R0, 0x28, RZ", "samples": 5, "samples_not_issued": 5, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_no_inst": 5}},
+     {"offset": 9776, "sass": "@!P5  F2FP.F16.F32.PACK_AB R61, R61, R60", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9792, "sass": "ISETP.GE.OR P4, PT, R14, R9, P1", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9808, "sass": "@!P5  STG.E [R4.64], R61", "samples": 82, "samples_not_issued": 77, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 78, "stall_mio": 1, "stall_not_selected": 1, "stall_wait": 2}},
+     {"offset": 9824, "sass": "ISETP.GE.OR P5, PT, R12, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 9840, "sass": "@!P4  F2FP.F16.F32.PACK_AB R63, R63, R62", "samples": 6, "samples_not_issued": 5, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 5}},
+     {"offset": 9856, "sass": "@!P5  F2FP.F16.F32.PACK_AB R69, R69, R68", "samples": 4, "samples_not_issued": 3, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 3}},
+     {"offset": 9872, "sass": "@!P4  STG.E [R6.64], R63", "samples": 29, "samples_not_issued": 28, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 28, "stall_selected": 1}},
+     {"offset": 9888, "sass": "ISETP.GE.OR P4, PT, R14, R9, P2", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 9904, "sass": "@!P5  STG.E [R4.64+0x10], R69", "samples": 44, "samples_not_issued": 42, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 43, "stall_selected": 1}},
+     {"offset": 9920, "sass": "ISETP.GE.OR P5, PT, R12, R9, P3", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 9936, "sass": "@!P4  F2FP.F16.F32.PACK_AB R71, R71, R70", "samples": 10, "samples_not_issued": 9, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 9}},
+     {"offset": 9952, "sass": "@!P5  F2FP.F16.F32.PACK_AB R81, R81, R80", "samples": 9, "samples_not_issued": 5, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 2, "stall_selected": 2, "stall_wait": 5}},
+     {"offset": 9968, "sass": "@!P4  STG.E [R6.64+0x10], R71", "samples": 31, "samples_not_issued": 31, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 31}},
+     {"offset": 9984, "sass": "ISETP.GE.OR P4, PT, R14, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10000, "sass": "@!P5  STG.E [R4.64+0x20], R81", "samples": 38, "samples_not_issued": 37, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 35, "stall_mio": 1, "stall_wait": 2}},
+     {"offset": 10016, "sass": "ISETP.GE.OR P5, PT, R12, R9, P0", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 10032, "sass": "@!P4  F2FP.F16.F32.PACK_AB R83, R83, R82", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_not_selected": 1, "stall_wait": 1}},
+     {"offset": 10048, "sass": "@!P5  F2FP.F16.F32.PACK_AB R89, R89, R88", "samples": 4, "samples_not_issued": 3, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_wait": 3}},
+     {"offset": 10064, "sass": "@!P4  STG.E [R6.64+0x20], R83", "samples": 27, "samples_not_issued": 23, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 24, "stall_mio": 3}},
+     {"offset": 10080, "sass": "ISETP.GE.OR P4, PT, R14, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10096, "sass": "@!P5  STG.E [R4.64+0x30], R89", "samples": 40, "samples_not_issued": 37, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 35, "stall_mio": 1, "stall_wait": 4}},
+     {"offset": 10112, "sass": "@!P4  F2FP.F16.F32.PACK_AB R91, R91, R90", "samples": 4, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 3}},
+     {"offset": 10128, "sass": "@!P4  STG.E [R6.64+0x30], R91", "samples": 35, "samples_not_issued": 34, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 31, "stall_mio": 1, "stall_wait": 3}},
+     {"offset": 10144, "sass": "BSYNC B0", "samples": 202, "samples_not_issued": 176, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_long_sb": 201, "stall_selected": 1}},
+     {"offset": 10160, "sass": "IADD3 R6, R0, 0x30, RZ", "samples": 4, "samples_not_issued": 4, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 4}},
+     {"offset": 10176, "sass": "IMAD R5, R6, c[0x0][0x17c], RZ", "samples": 3, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 2}},
+     {"offset": 10192, "sass": "IMAD.IADD R7, R8, 0x1, R5", "samples": 4, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 3}},
+     {"offset": 10208, "sass": "IMAD R5, R10, 0x8, R5", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 10224, "sass": "IADD3 R12, P4, R2, R7, RZ", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 10240, "sass": "IMAD.IADD R5, R8, 0x1, R5", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 10256, "sass": "LEA.HI.X.SX32 R13, R7, R3, 0x1, P4", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 10272, "sass": "IADD3 R7, P5, R2, R5, RZ", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 10288, "sass": "LEA R4, P4, R12, c[0x0][0x160], 0x1", "samples": 3, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 2}},
+     {"offset": 10304, "sass": "LEA.HI.X.SX32 R10, R5, R3, 0x1, P5", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10320, "sass": "LEA.HI.X R5, R12, c[0x0][0x164], R13, 0x1, P4", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 10336, "sass": "LEA R2, P4, R7, c[0x0][0x160], 0x1", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 10352, "sass": "ISETP.GE.OR P5, PT, R6, R9, P1", "samples": 5, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 3, "stall_wait": 2}},
+     {"offset": 10368, "sass": "LEA.HI.X R3, R7, c[0x0][0x164], R10, 0x1, P4", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10384, "sass": "@!P6  BRA 0x700ea10a0", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10400, "sass": "BSSY B0, 0x700ea0c50", "samples": 5, "samples_not_issued": 2, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_wait": 3}},
+     {"offset": 10416, "sass": "ISETP.GE.OR P4, PT, R6, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10432, "sass": "IADD3 R0, R0, 0x38, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10448, "sass": "@P5   BRA 0x700ea0c40", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10464, "sass": "IADD3 R10, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10480, "sass": "F2FP.F16.F32.PACK_AB R96, RZ, R96", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10496, "sass": "ISETP.GE.AND P5, PT, R10, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10512, "sass": "STG.E.U16 [R4.64], R96", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10528, "sass": "@!P5  F2FP.F16.F32.PACK_AB R97, RZ, R97", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10544, "sass": "@!P5  STG.E.U16 [R4.64+0x2], R97", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10560, "sass": "BSYNC B0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10576, "sass": "ISETP.GE.OR P1, PT, R0, R9, P1", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10592, "sass": "BSSY B0, 0x700ea0d40", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10608, "sass": "ISETP.GE.OR P5, PT, R6, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10624, "sass": "ISETP.GE.OR P6, PT, R6, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10640, "sass": "ISETP.GE.OR P2, PT, R0, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10656, "sass": "ISETP.GE.OR P3, PT, R0, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10672, "sass": "ISETP.GE.OR P0, PT, R0, R9, P0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10688, "sass": "@P1   BRA 0x700ea0d30", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10704, "sass": "IADD3 R0, R8, 0x1, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10720, "sass": "F2FP.F16.F32.PACK_AB R98, RZ, R98", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10736, "sass": "ISETP.GE.AND P1, PT, R0, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10752, "sass": "STG.E.U16 [R2.64], R98", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10768, "sass": "@!P1  F2FP.F16.F32.PACK_AB R99, RZ, R99", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10784, "sass": "@!P1  STG.E.U16 [R2.64+0x2], R99", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10800, "sass": "BSYNC B0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10816, "sass": "BSSY B0, 0x700ea0dd0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10832, "sass": "@P4   BRA 0x700ea0dc0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10848, "sass": "IADD3 R0, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10864, "sass": "F2FP.F16.F32.PACK_AB R108, RZ, R108", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10880, "sass": "ISETP.GE.AND P1, PT, R0, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10896, "sass": "STG.E.U16 [R4.64+0x10], R108", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10912, "sass": "@!P1  F2FP.F16.F32.PACK_AB R109, RZ, R109", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10928, "sass": "@!P1  STG.E.U16 [R4.64+0x12], R109", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10944, "sass": "BSYNC B0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10960, "sass": "BSSY B0, 0x700ea0e60", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10976, "sass": "@P2   BRA 0x700ea0e50", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 10992, "sass": "IADD3 R0, R8, 0x9, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11008, "sass": "F2FP.F16.F32.PACK_AB R110, RZ, R110", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11024, "sass": "ISETP.GE.AND P1, PT, R0, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11040, "sass": "STG.E.U16 [R2.64+0x10], R110", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11056, "sass": "@!P1  F2FP.F16.F32.PACK_AB R111, RZ, R111", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11072, "sass": "@!P1  STG.E.U16 [R2.64+0x12], R111", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11088, "sass": "BSYNC B0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11104, "sass": "BSSY B0, 0x700ea0ef0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11120, "sass": "@P5   BRA 0x700ea0ee0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11136, "sass": "IADD3 R0, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11152, "sass": "F2FP.F16.F32.PACK_AB R112, RZ, R112", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11168, "sass": "ISETP.GE.AND P1, PT, R0, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11184, "sass": "STG.E.U16 [R4.64+0x20], R112", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11200, "sass": "@!P1  F2FP.F16.F32.PACK_AB R113, RZ, R113", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11216, "sass": "@!P1  STG.E.U16 [R4.64+0x22], R113", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11232, "sass": "BSYNC B0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11248, "sass": "BSSY B0, 0x700ea0f80", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11264, "sass": "@P3   BRA 0x700ea0f70", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11280, "sass": "IADD3 R0, R8, 0x11, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11296, "sass": "F2FP.F16.F32.PACK_AB R114, RZ, R114", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11312, "sass": "ISETP.GE.AND P1, PT, R0, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11328, "sass": "STG.E.U16 [R2.64+0x20], R114", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11344, "sass": "@!P1  F2FP.F16.F32.PACK_AB R115, RZ, R115", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11360, "sass": "@!P1  STG.E.U16 [R2.64+0x22], R115", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11376, "sass": "BSYNC B0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11392, "sass": "BSSY B0, 0x700ea1010", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11408, "sass": "@P6   BRA 0x700ea1000", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11424, "sass": "IADD3 R0, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11440, "sass": "F2FP.F16.F32.PACK_AB R104, RZ, R104", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11456, "sass": "ISETP.GE.AND P1, PT, R0, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11472, "sass": "STG.E.U16 [R4.64+0x30], R104", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11488, "sass": "@!P1  F2FP.F16.F32.PACK_AB R105, RZ, R105", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11504, "sass": "@!P1  STG.E.U16 [R4.64+0x32], R105", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11520, "sass": "BSYNC B0", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11536, "sass": "@P0   EXIT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11552, "sass": "IADD3 R8, R8, 0x19, RZ", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11568, "sass": "F2FP.F16.F32.PACK_AB R106, RZ, R106", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11584, "sass": "ISETP.GE.AND P0, PT, R8, R11, PT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11600, "sass": "STG.E.U16 [R2.64+0x30], R106", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11616, "sass": "@P0   EXIT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11632, "sass": "F2FP.F16.F32.PACK_AB R107, RZ, R107", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11648, "sass": "STG.E.U16 [R2.64+0x32], R107", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11664, "sass": "EXIT", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11680, "sass": "IADD3 R0, R0, 0x38, RZ", "samples": 6, "samples_not_issued": 4, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 1, "stall_no_inst": 5}},
+     {"offset": 11696, "sass": "@!P5  F2FP.F16.F32.PACK_AB R97, R97, R96", "samples": 2, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1, "stall_wait": 1}},
+     {"offset": 11712, "sass": "ISETP.GE.OR P1, PT, R0, R9, P1", "samples": 2, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_math": 1, "stall_wait": 1}},
+     {"offset": 11728, "sass": "ISETP.GE.OR P4, PT, R6, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11744, "sass": "@!P5  STG.E [R4.64], R97", "samples": 68, "samples_not_issued": 64, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 66, "stall_mio": 1, "stall_selected": 1}},
+     {"offset": 11760, "sass": "ISETP.GE.OR P2, PT, R0, R9, P2", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11776, "sass": "ISETP.GE.OR P5, PT, R6, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11792, "sass": "ISETP.GE.OR P3, PT, R0, R9, P3", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11808, "sass": "ISETP.GE.OR P6, PT, R6, R9, P0", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 11824, "sass": "ISETP.GE.OR P0, PT, R0, R9, P0", "samples": 4, "samples_not_issued": 2, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2, "stall_wait": 2}},
+     {"offset": 11840, "sass": "@!P1  F2FP.F16.F32.PACK_AB R99, R99, R98", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 11856, "sass": "@!P4  F2FP.F16.F32.PACK_AB R109, R109, R108", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11872, "sass": "@!P2  F2FP.F16.F32.PACK_AB R111, R111, R110", "samples": 2, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 2}},
+     {"offset": 11888, "sass": "@!P1  STG.E [R2.64], R99", "samples": 29, "samples_not_issued": 29, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 29}},
+     {"offset": 11904, "sass": "@!P5  F2FP.F16.F32.PACK_AB R113, R113, R112", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 11920, "sass": "@!P3  F2FP.F16.F32.PACK_AB R115, R115, R114", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 11936, "sass": "@!P4  STG.E [R4.64+0x10], R109", "samples": 37, "samples_not_issued": 36, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 34, "stall_mio": 2, "stall_selected": 1}},
+     {"offset": 11952, "sass": "@!P6  F2FP.F16.F32.PACK_AB R105, R105, R104", "samples": 1, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_selected": 1}},
+     {"offset": 11968, "sass": "@!P2  STG.E [R2.64+0x10], R111", "samples": 22, "samples_not_issued": 21, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 18, "stall_mio": 1, "stall_selected": 1, "stall_wait": 2}},
+     {"offset": 11984, "sass": "@!P5  STG.E [R4.64+0x20], R113", "samples": 33, "samples_not_issued": 33, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 30, "stall_mio": 1, "stall_wait": 2}},
+     {"offset": 12000, "sass": "@!P3  STG.E [R2.64+0x20], R115", "samples": 38, "samples_not_issued": 32, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 37, "stall_wait": 1}},
+     {"offset": 12016, "sass": "@!P6  STG.E [R4.64+0x30], R105", "samples": 26, "samples_not_issued": 25, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 24, "stall_selected": 1, "stall_wait": 1}},
+     {"offset": 12032, "sass": "@P0   EXIT", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12048, "sass": "F2FP.F16.F32.PACK_AB R107, R107, R106", "samples": 1, "samples_not_issued": 1, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_wait": 1}},
+     {"offset": 12064, "sass": "STG.E [R2.64+0x30], R107", "samples": 26, "samples_not_issued": 24, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_lg": 22, "stall_mio": 1, "stall_selected": 2, "stall_wait": 1}},
+     {"offset": 12080, "sass": "EXIT", "samples": 0, "samples_not_issued": 0, "executed": 9216, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12096, "sass": "BRA 0x700ea1240", "samples": 302, "samples_not_issued": 283, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {"stall_branch_resolving": 3, "stall_drain": 293, "stall_selected": 3, "stall_wait": 3}},
+     {"offset": 12112, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12128, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12144, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12160, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12176, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12192, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12208, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12224, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12240, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12256, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}},
+     {"offset": 12272, "sass": "NOP", "samples": 0, "samples_not_issued": 0, "executed": 0, "l1_wavefronts_shared": 0, "l1_wavefronts_shared_ideal": 0, "stalls": {}}
+    ]
+   }
+  ],
+  "baseline": [
+   {
+    "name": "ampere_fp16_s1688gemm_fp16_128x128_ldg8_f2f_tn",
+    "block": [128, 1, 1],
+    "grid": [18, 64, 1],
+    "metrics": {
+     "gpu__time_duration.sum": {
+      "value": 2.577792,
+      "unit": "msecond"
+     },
+     "sm__cycles_elapsed.avg.per_second": {
+      "value": 1.139949,
+      "unit": "cycle/nsecond"
+     },
+     "sm__cycles_elapsed.max": {
+      "value": 2938566,
+      "unit": "cycle"
+     },
+     "sm__cycles_active.avg": {
+      "value": 2915705.4,
+      "unit": "cycle"
+     },
+     "launch__registers_per_thread": {
+      "value": 254,
+      "unit": "register/thread"
+     },
+     "launch__shared_mem_per_block_static": {
+      "value": 32.768,
+      "unit": "Kbyte/block"
+     },
+     "launch__shared_mem_per_block_dynamic": {
+      "value": 0,
+      "unit": "byte/block"
+     },
+     "launch__block_size": {
+      "value": 128,
+      "unit": ""
+     },
+     "launch__grid_size": {
+      "value": 1152,
+      "unit": ""
+     },
+     "launch__occupancy_limit_registers": {
+      "value": 2,
+      "unit": "block"
+     },
+     "launch__occupancy_limit_shared_mem": {
+      "value": 3,
+      "unit": "block"
+     },
+     "launch__occupancy_limit_warps": {
+      "value": 12,
+      "unit": "block"
+     },
+     "launch__occupancy_limit_blocks": {
+      "value": 24,
+      "unit": "block"
+     },
+     "launch__waves_per_multiprocessor": {
+      "value": 28.8,
+      "unit": ""
+     },
+     "sm__maximum_warps_per_active_cycle_pct": {
+      "value": 16.666667,
+      "unit": "%"
+     },
+     "sm__warps_active.avg.pct_of_peak_sustained_active": {
+      "value": 16.496028,
+      "unit": "%"
+     },
+     "sm__pipe_tensor_op_hmma_cycles_active.avg.pct_of_peak_sustained_active": {
+      "value": 48.55009,
+      "unit": "%"
+     },
+     "sm__inst_executed_pipe_tensor_op_hmma.avg.pct_of_peak_sustained_active": {
+      "value": 48.55009,
+      "unit": "%"
+     },
+     "smsp__inst_executed.sum": {
+      "value": 24532992,
+      "unit": "inst"
+     },
+     "smsp__issue_active.avg.pct_of_peak_sustained_active": {
+      "value": 10.517969,
+      "unit": "%"
+     },
+     "smsp__issue_active.avg.per_cycle_active": {
+      "value": 0.11,
+      "unit": ""
+     },
+     "smsp__average_warp_latency_per_inst_issued.ratio": {
+      "value": 18.816816,
+      "unit": "cycle"
+     },
+     "dram__bytes_read.sum": {
+      "value": 9.682944,
+      "unit": "Mbyte"
+     },
+     "dram__bytes_write.sum": {
+      "value": 9.468672,
+      "unit": "Mbyte"
+     },
+     "gpu__dram_throughput.avg.pct_of_peak_sustained_elapsed": {
+      "value": 5.809606,
+      "unit": "%"
+     },
+     "lts__t_sector_hit_rate.pct": {
+      "value": 97.503008,
+      "unit": "%"
+     },
+     "lts__t_sectors.sum": {
+      "value": 15741299,
+      "unit": "sector"
+     },
+     "l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_ld.sum": {
+      "value": 33693,
+      "unit": ""
+     },
+     "l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum": {
+      "value": 99850,
+      "unit": ""
+     },
+     "l1tex__data_pipe_lsu_wavefronts_mem_shared_op_ld.sum": {
+      "value": 7783051,
+      "unit": ""
+     },
+     "l1tex__data_pipe_lsu_wavefronts_mem_shared_op_st.sum": {
+      "value": 4526857,
+      "unit": ""
+     },
+     "smsp__sass_inst_executed_op_shared_ld.sum": {
+      "value": 147456,
+      "unit": "inst"
+     },
+     "smsp__sass_inst_executed_op_shared_st.sum": {
+      "value": 1548288,
+      "unit": "inst"
+     },
+     "smsp__sass_inst_executed_op_global_ld.sum": {
+      "value": 884736,
+      "unit": "inst"
+     },
+     "smsp__sass_inst_executed_op_global_st.sum": {
+      "value": 147456,
+      "unit": "inst"
+     },
+     "smsp__inst_executed_op_ldsm.sum": {
+      "value": 1787904,
+      "unit": "inst"
+     },
+     "sm__throughput.avg.pct_of_peak_sustained_elapsed": {
+      "value": 48.172616,
+      "unit": "%"
+     },
+     "gpu__compute_memory_throughput.avg.pct_of_peak_sustained_elapsed": {
+      "value": 28.466179,
+      "unit": "%"
+     },
+     "l1tex__throughput.avg.pct_of_peak_sustained_active": {
+      "value": 28.689236,
+      "unit": "%"
+     },
+     "smsp__average_warps_issue_stalled_barrier_per_issue_active.ratio": {
+      "value": 0.341655,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_branch_resolving_per_issue_active.ratio": {
+      "value": 0.064609,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_dispatch_stall_per_issue_active.ratio": {
+      "value": 0.005552,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_drain_per_issue_active.ratio": {
+      "value": 0.015755,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_imc_miss_per_issue_active.ratio": {
+      "value": 0.008453,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_lg_throttle_per_issue_active.ratio": {
+      "value": 1.5e-05,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active.ratio": {
+      "value": 0.185757,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_math_pipe_throttle_per_issue_active.ratio": {
+      "value": 12.026831,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_membar_per_issue_active.ratio": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_mio_throttle_per_issue_active.ratio": {
+      "value": 0.363863,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_misc_per_issue_active.ratio": {
+      "value": 0.002295,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_no_instruction_per_issue_active.ratio": {
+      "value": 0.051639,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_not_selected_per_issue_active.ratio": {
+      "value": 0.531273,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_selected_per_issue_active.ratio": {
+      "value": 0.999951,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_short_scoreboard_per_issue_active.ratio": {
+      "value": 0.064851,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_sleeping_per_issue_active.ratio": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_tex_throttle_per_issue_active.ratio": {
+      "value": 0,
+      "unit": "inst"
+     },
+     "smsp__average_warps_issue_stalled_wait_per_issue_active.ratio": {
+      "value": 4.163622,
+      "unit": "inst"
+     }
+    }
+   }
+  ]
+ },
+ "summary": {
+  "flint": {
+   "kernels": 1,
+   "total_duration_ns": 2961632.0,
+   "total_sm_cycles": 3376197
+  },
+  "baseline": {
+   "kernels": 1,
+   "total_duration_ns": 2577792.0,
+   "total_sm_cycles": 2938566
+  },
+  "baseline_cycles_over_flint_cycles": 0.8703775283255094,
+  "baseline_time_over_flint_time": 0.8703957817851778
+ }
+}

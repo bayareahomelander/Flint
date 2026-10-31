@@ -1,0 +1,3379 @@
+{
+  "schema": "flint-sass-loops/1",
+  "cuda": "Build cuda_12.4.r12.4/compiler.34043715_0",
+  "git": {
+    "sha": "f1a308a5a75f4f8c602a8eed46c1c97619164009",
+    "dirty": false
+  },
+  "library": "libflint.so",
+  "archs": {
+    "sm_75": {
+      "gemm_nt": {
+        "mangled": "_ZN5flint<anon>7gemm_ntEP6__halfPKS1_S4_iii",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT.SYS": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 708,
+          "yield_count": 122,
+          "waits": 13,
+          "hmma_waits": 8,
+          "load_to_use": [
+            {
+              "index": 41,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 7,
+              "static_cycles": 19
+            },
+            {
+              "index": 43,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 601
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 81
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 89
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 97
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 121
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 145
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 553
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 9,
+              "static_cycles": 65
+            }
+          ],
+          "structure": {
+            "bar": [
+              10,
+              52
+            ],
+            "ldg": [
+              41,
+              43,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 10,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 11,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nn": {
+        "mangled": "_ZN5flint<anon>7gemm_nnEP6__halfPKS1_S4_iii",
+        "loop": {
+          "length": 144,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 48,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 8,
+              "LDSM.16.MT88.4": 4
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT.SYS": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.25,
+          "non_hmma_per_hmma": 1.25,
+          "stall_sum": 722,
+          "yield_count": 137,
+          "waits": 13,
+          "hmma_waits": 8,
+          "load_to_use": [
+            {
+              "index": 53,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 63,
+              "waiter_opcode": "STS.128",
+              "distance": 10,
+              "static_cycles": 26
+            },
+            {
+              "index": 56,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 62,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 17
+            },
+            {
+              "index": 58,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 59,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 67,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 601
+            },
+            {
+              "index": 68,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 0,
+              "waiter_index": 79,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 81
+            },
+            {
+              "index": 69,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 89
+            },
+            {
+              "index": 70,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 97
+            },
+            {
+              "index": 71,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 121
+            },
+            {
+              "index": 72,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 145
+            },
+            {
+              "index": 73,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 553
+            },
+            {
+              "index": 74,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 75,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 76,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 77,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 78,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 9,
+              "static_cycles": 65
+            }
+          ],
+          "structure": {
+            "bar": [
+              16,
+              66
+            ],
+            "ldg": [
+              53,
+              56,
+              58,
+              59
+            ],
+            "sts": [
+              62,
+              63,
+              64,
+              65
+            ],
+            "ldsm": [
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 16,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 17,
+                "last": 66,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 67,
+                "last": 143,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_tn": {
+        "mangled": "_ZN5flint<anon>7gemm_tnEPfPK6__halfS4_iiiNS0_6TnArgsE",
+        "loop": {
+          "length": 144,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 47,
+            "UNIFORM_SPECIAL": 10,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.MT88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT.SYS": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.25,
+          "non_hmma_per_hmma": 1.25,
+          "stall_sum": 735,
+          "yield_count": 134,
+          "waits": 14,
+          "hmma_waits": 8,
+          "load_to_use": [
+            {
+              "index": 33,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 62,
+              "waiter_opcode": "STS.128",
+              "distance": 29,
+              "static_cycles": 60
+            },
+            {
+              "index": 50,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 63,
+              "waiter_opcode": "STS.128",
+              "distance": 13,
+              "static_cycles": 35
+            },
+            {
+              "index": 58,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 59,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 67,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 601
+            },
+            {
+              "index": 68,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 0,
+              "waiter_index": 79,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 81
+            },
+            {
+              "index": 69,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 89
+            },
+            {
+              "index": 70,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 97
+            },
+            {
+              "index": 71,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 121
+            },
+            {
+              "index": 72,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 145
+            },
+            {
+              "index": 73,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 553
+            },
+            {
+              "index": 74,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 75,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 76,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 77,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 78,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 9,
+              "static_cycles": 65
+            }
+          ],
+          "structure": {
+            "bar": [
+              17,
+              66
+            ],
+            "ldg": [
+              33,
+              50,
+              58,
+              59
+            ],
+            "sts": [
+              62,
+              63,
+              64,
+              65
+            ],
+            "ldsm": [
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 17,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 18,
+                "last": 66,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 67,
+                "last": 143,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nt_bias": {
+        "mangled": "_ZN5flint<anon>12gemm_nt_biasEP6__halfPKS1_S4_iiiPKf",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT.SYS": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 708,
+          "yield_count": 122,
+          "waits": 13,
+          "hmma_waits": 8,
+          "load_to_use": [
+            {
+              "index": 41,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 7,
+              "static_cycles": 19
+            },
+            {
+              "index": 43,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 601
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 81
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 89
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 97
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 121
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 145
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 553
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 9,
+              "static_cycles": 65
+            }
+          ],
+          "structure": {
+            "bar": [
+              10,
+              52
+            ],
+            "ldg": [
+              41,
+              43,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 10,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 11,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nt_bias_gelu": {
+        "mangled": "_ZN5flint<anon>17gemm_nt_bias_geluEP6__halfPKS1_S4_iiiPKfS2_",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT.SYS": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 707,
+          "yield_count": 124,
+          "waits": 13,
+          "hmma_waits": 8,
+          "load_to_use": [
+            {
+              "index": 38,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 10,
+              "static_cycles": 25
+            },
+            {
+              "index": 43,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 7,
+              "static_cycles": 22
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 601
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 81
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 89
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 97
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 121
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 145
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 553
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 9,
+              "static_cycles": 65
+            }
+          ],
+          "structure": {
+            "bar": [
+              11,
+              52
+            ],
+            "ldg": [
+              38,
+              43,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 11,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 12,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nn_dgelu": {
+        "mangled": "_ZN5flint<anon>13gemm_nn_dgeluEP6__halfPKS1_S4_iiiS4_",
+        "loop": {
+          "length": 144,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 48,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 8,
+              "LDSM.16.MT88.4": 4
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT.SYS": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.25,
+          "non_hmma_per_hmma": 1.25,
+          "stall_sum": 732,
+          "yield_count": 133,
+          "waits": 13,
+          "hmma_waits": 8,
+          "load_to_use": [
+            {
+              "index": 46,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 62,
+              "waiter_opcode": "STS.128",
+              "distance": 16,
+              "static_cycles": 41
+            },
+            {
+              "index": 52,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 12,
+              "static_cycles": 39
+            },
+            {
+              "index": 55,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 63,
+              "waiter_opcode": "STS.128",
+              "distance": 8,
+              "static_cycles": 26
+            },
+            {
+              "index": 56,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 8,
+              "static_cycles": 26
+            },
+            {
+              "index": 67,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 601
+            },
+            {
+              "index": 68,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 0,
+              "waiter_index": 79,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 81
+            },
+            {
+              "index": 69,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 89
+            },
+            {
+              "index": 70,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 97
+            },
+            {
+              "index": 71,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 121
+            },
+            {
+              "index": 72,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 145
+            },
+            {
+              "index": 73,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 553
+            },
+            {
+              "index": 74,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 75,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 76,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 77,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 78,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 9,
+              "static_cycles": 65
+            }
+          ],
+          "structure": {
+            "bar": [
+              13,
+              66
+            ],
+            "ldg": [
+              46,
+              52,
+              55,
+              56
+            ],
+            "sts": [
+              62,
+              63,
+              64,
+              65
+            ],
+            "ldsm": [
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 13,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 14,
+                "last": 66,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 67,
+                "last": 143,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nt_bias_residual": {
+        "mangled": "_ZN5flint<anon>21gemm_nt_bias_residualEPfPK6__halfS4_iiiPKfS6_",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT.SYS": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 705,
+          "yield_count": 123,
+          "waits": 13,
+          "hmma_waits": 8,
+          "load_to_use": [
+            {
+              "index": 41,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 26
+            },
+            {
+              "index": 43,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 3,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 4,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT.SYS",
+              "barrier": 2,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 5,
+              "static_cycles": 14
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 601
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 81
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 89
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 97
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 121
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 145
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 553
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 7,
+              "static_cycles": 49
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 6,
+              "static_cycles": 41
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 9,
+              "static_cycles": 65
+            }
+          ],
+          "structure": {
+            "bar": [
+              16,
+              52
+            ],
+            "ldg": [
+              41,
+              43,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 16,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 17,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      }
+    },
+    "sm_89": {
+      "gemm_nt": {
+        "mangled": "_ZN5flint<anon>7gemm_ntEP6__halfPKS1_S4_iii",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 407,
+          "yield_count": 121,
+          "waits": 11,
+          "hmma_waits": 6,
+          "load_to_use": [
+            {
+              "index": 39,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 2,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 18
+            },
+            {
+              "index": 42,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 3,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 7,
+              "static_cycles": 18
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 5,
+              "waiter_index": 51,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 303
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 61
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 73
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 279
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 5,
+              "waiter_index": 97,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 37,
+              "static_cycles": 145
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 14,
+              "static_cycles": 53
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            }
+          ],
+          "structure": {
+            "bar": [
+              10,
+              52
+            ],
+            "ldg": [
+              39,
+              42,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 10,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 11,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nn": {
+        "mangled": "_ZN5flint<anon>7gemm_nnEP6__halfPKS1_S4_iii",
+        "loop": {
+          "length": 144,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 48,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 8,
+              "LDSM.16.MT88.4": 4
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.25,
+          "non_hmma_per_hmma": 1.25,
+          "stall_sum": 428,
+          "yield_count": 136,
+          "waits": 11,
+          "hmma_waits": 6,
+          "load_to_use": [
+            {
+              "index": 56,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 2,
+              "waiter_index": 62,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 57,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 3,
+              "waiter_index": 63,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 58,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 4,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 59,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 5,
+              "waiter_index": 65,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 67,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 303
+            },
+            {
+              "index": 68,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 0,
+              "waiter_index": 79,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 69,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 70,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            },
+            {
+              "index": 71,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 61
+            },
+            {
+              "index": 72,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 73
+            },
+            {
+              "index": 73,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 279
+            },
+            {
+              "index": 74,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 5,
+              "waiter_index": 111,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 37,
+              "static_cycles": 145
+            },
+            {
+              "index": 75,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 76,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 77,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 14,
+              "static_cycles": 53
+            },
+            {
+              "index": 78,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            }
+          ],
+          "structure": {
+            "bar": [
+              15,
+              66
+            ],
+            "ldg": [
+              56,
+              57,
+              58,
+              59
+            ],
+            "sts": [
+              62,
+              63,
+              64,
+              65
+            ],
+            "ldsm": [
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 15,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 16,
+                "last": 66,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 67,
+                "last": 143,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_tn": {
+        "mangled": "_ZN5flint<anon>7gemm_tnEPfPK6__halfS4_iiiNS0_6TnArgsE",
+        "loop": {
+          "length": 144,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 47,
+            "UNIFORM_SPECIAL": 10,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.MT88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.25,
+          "non_hmma_per_hmma": 1.25,
+          "stall_sum": 429,
+          "yield_count": 134,
+          "waits": 12,
+          "hmma_waits": 6,
+          "load_to_use": [
+            {
+              "index": 32,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 2,
+              "waiter_index": 62,
+              "waiter_opcode": "STS.128",
+              "distance": 30,
+              "static_cycles": 56
+            },
+            {
+              "index": 49,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 3,
+              "waiter_index": 63,
+              "waiter_opcode": "STS.128",
+              "distance": 14,
+              "static_cycles": 32
+            },
+            {
+              "index": 57,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 4,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 7,
+              "static_cycles": 22
+            },
+            {
+              "index": 59,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 5,
+              "waiter_index": 65,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 67,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 303
+            },
+            {
+              "index": 68,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 0,
+              "waiter_index": 79,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 69,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 70,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            },
+            {
+              "index": 71,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 61
+            },
+            {
+              "index": 72,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 73
+            },
+            {
+              "index": 73,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 279
+            },
+            {
+              "index": 74,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 5,
+              "waiter_index": 111,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 37,
+              "static_cycles": 145
+            },
+            {
+              "index": 75,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 76,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 77,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 14,
+              "static_cycles": 53
+            },
+            {
+              "index": 78,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            }
+          ],
+          "structure": {
+            "bar": [
+              17,
+              66
+            ],
+            "ldg": [
+              32,
+              49,
+              57,
+              59
+            ],
+            "sts": [
+              62,
+              63,
+              64,
+              65
+            ],
+            "ldsm": [
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 17,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 18,
+                "last": 66,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 67,
+                "last": 143,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nt_bias": {
+        "mangled": "_ZN5flint<anon>12gemm_nt_biasEP6__halfPKS1_S4_iiiPKf",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 407,
+          "yield_count": 121,
+          "waits": 11,
+          "hmma_waits": 6,
+          "load_to_use": [
+            {
+              "index": 39,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 2,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 18
+            },
+            {
+              "index": 42,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 3,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 7,
+              "static_cycles": 18
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 5,
+              "waiter_index": 51,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 303
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 61
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 73
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 279
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 5,
+              "waiter_index": 97,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 37,
+              "static_cycles": 145
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 14,
+              "static_cycles": 53
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            }
+          ],
+          "structure": {
+            "bar": [
+              10,
+              52
+            ],
+            "ldg": [
+              39,
+              42,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 10,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 11,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nt_bias_gelu": {
+        "mangled": "_ZN5flint<anon>17gemm_nt_bias_geluEP6__halfPKS1_S4_iiiPKfS2_",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 412,
+          "yield_count": 123,
+          "waits": 11,
+          "hmma_waits": 6,
+          "load_to_use": [
+            {
+              "index": 39,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 2,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 20
+            },
+            {
+              "index": 43,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 3,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 5,
+              "waiter_index": 51,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 303
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 61
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 73
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 279
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 5,
+              "waiter_index": 97,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 37,
+              "static_cycles": 145
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 14,
+              "static_cycles": 53
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            }
+          ],
+          "structure": {
+            "bar": [
+              11,
+              52
+            ],
+            "ldg": [
+              39,
+              43,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 11,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 12,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nn_dgelu": {
+        "mangled": "_ZN5flint<anon>13gemm_nn_dgeluEP6__halfPKS1_S4_iiiS4_",
+        "loop": {
+          "length": 144,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 48,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 8,
+              "LDSM.16.MT88.4": 4
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.25,
+          "non_hmma_per_hmma": 1.25,
+          "stall_sum": 439,
+          "yield_count": 133,
+          "waits": 11,
+          "hmma_waits": 6,
+          "load_to_use": [
+            {
+              "index": 53,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 2,
+              "waiter_index": 62,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 30
+            },
+            {
+              "index": 54,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 3,
+              "waiter_index": 63,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 30
+            },
+            {
+              "index": 55,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 4,
+              "waiter_index": 64,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 30
+            },
+            {
+              "index": 56,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 5,
+              "waiter_index": 65,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 30
+            },
+            {
+              "index": 67,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 303
+            },
+            {
+              "index": 68,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 0,
+              "waiter_index": 79,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 69,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 1,
+              "waiter_index": 81,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 70,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 83,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            },
+            {
+              "index": 71,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 61
+            },
+            {
+              "index": 72,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 73
+            },
+            {
+              "index": 73,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 279
+            },
+            {
+              "index": 74,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 5,
+              "waiter_index": 111,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 37,
+              "static_cycles": 145
+            },
+            {
+              "index": 75,
+              "opcode": "LDSM.16.MT88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 76,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 87,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 77,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 14,
+              "static_cycles": 53
+            },
+            {
+              "index": 78,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 91,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            }
+          ],
+          "structure": {
+            "bar": [
+              11,
+              66
+            ],
+            "ldg": [
+              53,
+              54,
+              55,
+              56
+            ],
+            "sts": [
+              62,
+              63,
+              64,
+              65
+            ],
+            "ldsm": [
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 11,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 12,
+                "last": 66,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 67,
+                "last": 143,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      },
+      "gemm_nt_bias_residual": {
+        "mangled": "_ZN5flint<anon>21gemm_nt_bias_residualEPfPK6__halfS4_iiiPKfS6_",
+        "loop": {
+          "length": 130,
+          "classes": {
+            "HMMA": 64,
+            "LDSM": 12,
+            "LDG": 4,
+            "STS": 4,
+            "LDS": 0,
+            "BAR": 2,
+            "INT_ADDR": 34,
+            "UNIFORM_SPECIAL": 9,
+            "BRANCH": 1,
+            "OTHER": 0
+          },
+          "variants": {
+            "LDSM": {
+              "LDSM.16.M88.4": 12
+            },
+            "LDG": {
+              "LDG.E.128.CONSTANT": 4
+            },
+            "STS": {
+              "STS.128": 4
+            },
+            "OTHER": {}
+          },
+          "instr_per_hmma": 2.03125,
+          "non_hmma_per_hmma": 1.03125,
+          "stall_sum": 405,
+          "yield_count": 123,
+          "waits": 11,
+          "hmma_waits": 6,
+          "load_to_use": [
+            {
+              "index": 39,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 2,
+              "waiter_index": 48,
+              "waiter_opcode": "STS.128",
+              "distance": 9,
+              "static_cycles": 18
+            },
+            {
+              "index": 42,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 3,
+              "waiter_index": 49,
+              "waiter_opcode": "STS.128",
+              "distance": 7,
+              "static_cycles": 18
+            },
+            {
+              "index": 44,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 4,
+              "waiter_index": 50,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 45,
+              "opcode": "LDG.E.128.CONSTANT",
+              "barrier": 5,
+              "waiter_index": 51,
+              "waiter_opcode": "STS.128",
+              "distance": 6,
+              "static_cycles": 18
+            },
+            {
+              "index": 53,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 77,
+              "static_cycles": 303
+            },
+            {
+              "index": 54,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 0,
+              "waiter_index": 65,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 55,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 1,
+              "waiter_index": 67,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 56,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 2,
+              "waiter_index": 69,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            },
+            {
+              "index": 57,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 16,
+              "static_cycles": 61
+            },
+            {
+              "index": 58,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 19,
+              "static_cycles": 73
+            },
+            {
+              "index": 59,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": null,
+              "waiter_index": null,
+              "waiter_opcode": null,
+              "distance": 71,
+              "static_cycles": 279
+            },
+            {
+              "index": 60,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 5,
+              "waiter_index": 97,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 37,
+              "static_cycles": 145
+            },
+            {
+              "index": 61,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 12,
+              "static_cycles": 45
+            },
+            {
+              "index": 62,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 3,
+              "waiter_index": 73,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 11,
+              "static_cycles": 41
+            },
+            {
+              "index": 63,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 14,
+              "static_cycles": 53
+            },
+            {
+              "index": 64,
+              "opcode": "LDSM.16.M88.4",
+              "barrier": 4,
+              "waiter_index": 77,
+              "waiter_opcode": "HMMA.1688.F32",
+              "distance": 13,
+              "static_cycles": 49
+            }
+          ],
+          "structure": {
+            "bar": [
+              12,
+              52
+            ],
+            "ldg": [
+              39,
+              42,
+              44,
+              45
+            ],
+            "sts": [
+              48,
+              49,
+              50,
+              51
+            ],
+            "ldsm": [
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64
+            ],
+            "phases": [
+              {
+                "first": 0,
+                "last": 12,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 13,
+                "last": 52,
+                "ldg": 4,
+                "sts": 4,
+                "ldsm": 0,
+                "hmma": 0
+              },
+              {
+                "first": 53,
+                "last": 129,
+                "ldg": 0,
+                "sts": 0,
+                "ldsm": 12,
+                "hmma": 64
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
