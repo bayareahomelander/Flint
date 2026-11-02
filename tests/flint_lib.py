@@ -130,6 +130,21 @@ SIGNATURES = {
         ctypes.c_int,
         [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)],
     ),
+    "flint_layernorm_forward": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_float,
+            ctypes.c_void_p,
+        ],
+    ),
 }
 
 
@@ -282,5 +297,20 @@ class Flint:
             self.lib.flint_gemm_tn(
                 pointer(y), pointer(x), pointer(w), m, n, k, int(bool(accumulate)),
                 pointer(workspace), workspace_bytes, stream_handle(stream),
+            )
+        )
+
+    def layernorm_forward(
+        self, y, mean, rstd, x, gamma, beta, rows: int, cols: int, eps=1e-5, stream=None
+    ) -> None:
+        """LayerNorm's forward pass over each row of x (rows x cols FP32):
+        y = (x - mean) * rstd * gamma + beta, rounded to FP16 (rows x cols),
+        with rstd = 1 / sqrt(biased variance + eps). Stores each row's FP32
+        mean and rstd (rows values each); gamma and beta hold cols FP32
+        values."""
+        self.check(
+            self.lib.flint_layernorm_forward(
+                pointer(y), pointer(mean), pointer(rstd), pointer(x), pointer(gamma),
+                pointer(beta), rows, cols, eps, stream_handle(stream),
             )
         )

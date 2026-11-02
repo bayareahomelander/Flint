@@ -2,31 +2,20 @@
 // flint_gemm_nt_bias_residual, flint_gemm_nn, flint_gemm_nn_dgelu and
 // flint_gemm_tn: check the arguments, then launch the GEMM kernel for their
 // layout and epilogue.
-#include <cstdint>
-
+#include "common/checks.h"
 #include "common/error.h"
 #include "kernels/gemm.cuh"
 
 namespace {
 
+using flint::aligned16;
+using flint::fits;
+using flint::overlap;
+
 // The tensor cores' FP32 accumulation truncates, so the error grows with the
 // length of k's chain, while the peer's (PyTorch's FP16 path) stays flat. At
 // 2^16 it's 1.1x the peer's, and at 2^18 2.2x, past the correctness gate.
 constexpr size_t kMaxK = size_t{1} << 16;
-
-bool aligned16(const void* pointer) { return reinterpret_cast<uintptr_t>(pointer) % 16 == 0; }
-
-// Whether [pointer, pointer + bytes) stays inside the address space.
-bool fits(const void* pointer, size_t bytes) {
-    return bytes <= UINTPTR_MAX - reinterpret_cast<uintptr_t>(pointer);
-}
-
-// Whether [a, a + a_bytes) and [b, b + b_bytes) overlap, for ranges that fit.
-bool overlap(const void* a, size_t a_bytes, const void* b, size_t b_bytes) {
-    const uintptr_t a_begin = reinterpret_cast<uintptr_t>(a);
-    const uintptr_t b_begin = reinterpret_cast<uintptr_t>(b);
-    return a_begin < b_begin + b_bytes && b_begin < a_begin + a_bytes;
-}
 
 // The checks NT and NN share, for m and n positive (TN has its own, below). w
 // holds n * k halves either way. When its rows are n long, as in NN, they load

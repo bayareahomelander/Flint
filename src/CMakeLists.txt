@@ -3,10 +3,12 @@
 add_library(flint SHARED
   api/copy.cpp
   api/gemm.cpp
+  api/layernorm.cpp
   api/status.cpp
   common/error.cpp
   kernels/copy.cu
   kernels/gemm.cu
+  kernels/layernorm.cu
 )
 target_include_directories(flint
   PUBLIC ${PROJECT_SOURCE_DIR}/include

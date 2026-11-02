@@ -137,6 +137,28 @@ FLINT_API flint_status flint_gemm_tn(void* y, const void* x, const void* w, size
  * in *bytes: 0 when it needs none. It depends on the GPU's SM count. */
 FLINT_API flint_status flint_gemm_tn_workspace(size_t m, size_t n, size_t k, size_t* bytes);
 
+/* LayerNorm's forward pass, asynchronously on stream. For each row of x, a
+ * rows x cols FP32 matrix, it computes the row's mean and its biased variance,
+ * the mean of squared deviations from the mean, then
+ * y = (x - mean) * rstd * gamma + beta with rstd = 1 / sqrt(variance + eps).
+ * Everything is computed in FP32, and each value of y (rows x cols) rounds to
+ * FP16 once, to nearest, so overflow gives inf. The row's mean and rstd are
+ * stored in mean and rstd (rows FP32 values each) for the backward pass.
+ * gamma and beta hold cols FP32 values. Matrices are row-major and contiguous,
+ * in device memory. Each row's result depends only on that row, gamma and
+ * beta, and is deterministic. A row holding an inf or NaN gives NaN mean,
+ * rstd and y, and so does a row whose sum overflows FP32. A row whose sum of
+ * squared deviations overflows (a deviation from the mean of about 1.8e19 is
+ * enough) gives NaN rstd and y. PyTorch's LayerNorm can stay finite on both.
+ *
+ * cols must be from 1 to 2^24, rows can be up to 17,179,869,176, and eps must
+ * be finite and non-negative. All pointers must be 16-byte aligned, and y,
+ * mean and rstd must not overlap each other or the inputs. A rows of 0 does
+ * nothing. */
+FLINT_API flint_status flint_layernorm_forward(void* y, void* mean, void* rstd, const void* x,
+                                               const void* gamma, const void* beta, size_t rows,
+                                               size_t cols, float eps, flint_stream stream);
+
 #ifdef __cplusplus
 }
 #endif

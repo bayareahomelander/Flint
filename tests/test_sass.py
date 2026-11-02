@@ -307,3 +307,37 @@ def test_gemm_nt_bias_residual_reads_the_bias_and_residual_after_the_main_loop(a
     assert len(stores) == 32 and all(".64" in op for _, op in memory if op.startswith("STG"))
     for loads in (bias_loads, residual_loads, stores):
         assert all(address > loop_end for address in loads), (loads, loop_end)
+
+
+# -- LayerNorm ----------------------------------------------------------------
+
+# The instructions that make up an atomic operation (ATOM, ATOMG, ATOMS) or a
+# reduction in memory (RED), by opcode before the first dot.
+ATOMIC_OPCODES = {"ATOM", "ATOMG", "ATOMS", "RED"}
+
+
+def opcodes(body):
+    """The opcode of each of a kernel's instructions, modifiers included (the
+    predicate that guards an instruction is dropped)."""
+    return [sass_loop.PREDICATE.sub("", text).split()[0] for _, text, _, _ in instructions(body)]
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+def test_layernorm_kernels_have_no_spills_or_atomics(arch):
+    # "17layernorm_forward" is the kernel's own name, length-prefixed in the
+    # mangled name; it is a template with two instances, ILi4E for rows read
+    # four floats at a time and ILi1E for the rest.
+    kernels = {name: body for name, body in library_functions(arch).items()
+               if "17layernorm_forward" in name}
+    assert len(kernels) == 2, sorted(kernels)
+    for name, body in kernels.items():
+        assert "LDL" not in body and "STL" not in body, name
+        # PLAN.md forbids floating-point atomics in reductions: a row's sums are
+        # a warp's shuffles, in a fixed order.
+        atomic = [op for op in opcodes(body) if op.split(".")[0] in ATOMIC_OPCODES]
+        assert not atomic, (name, atomic)
+        # The extraction finds something: the warp reduction's shuffles.
+        assert any(op.startswith("SHFL") for op in opcodes(body)), name
+    # The vector instance loads 128 bits at a time, and the scalar one doesn't.
+    for name, body in kernels.items():
+        assert ("LDG.E.128" in body) == ("ILi4E" in name), name

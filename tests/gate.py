@@ -9,6 +9,10 @@ alone can approach: a relative L2 of 2^-11 and a max-abs of 2 FP16 ulps of the
 reference's largest magnitude. Use FORWARD_FACTOR for forward outputs and
 GRADIENT_FACTOR for gradients.
 
+Those floors are for FP16 outputs. An FP32 output (LayerNorm's mean and rstd)
+takes output="fp32", which swaps them for FP32's: a relative L2 of 2^-22 and a
+max-abs of 4 FP32 ulps of the reference's largest magnitude.
+
 Typical use, with one (flint, peer, reference) triple per seed:
 
     def triples():
@@ -38,6 +42,14 @@ FORWARD_FACTOR = 2.0
 GRADIENT_FACTOR = 3.0
 REL_L2_FLOOR = 2.0**-11
 MAX_ABS_FLOOR_ULPS = 2
+# An FP16 output rounds once at the end, but an FP32 output takes every step's
+# rounding: LayerNorm's rstd is a sum, a division, an add, a sqrt and a
+# reciprocal, and measured up to 2.4 FP32 ulps from the reference over 20,000
+# rows. With a single rounding's floors (2^-24, and 2 ulps), a peer that
+# happens to be correctly rounded on a row or two (LayerNorm at 1 x 4) failed
+# a kernel 1 ulp off, so FP32's floors allow a few roundings.
+REL_L2_FLOOR_FP32 = 2.0**-22
+MAX_ABS_FLOOR_ULPS_FP32 = 4
 # Up to this many multiply-adds the reference runs in FP64, beyond it in FP32.
 FP64_REFERENCE_LIMIT = 2**24
 
@@ -58,6 +70,30 @@ def fp16_ulp(v: float) -> float:
     # frexp gives v = mantissa * 2^exponent with mantissa in [0.5, 1), so
     # floor(log2 v) is exponent - 1, with no floating-point log to misround.
     return 2.0 ** (math.frexp(v)[1] - 1 - 10)
+
+
+def fp32_ulp(v: float) -> float:
+    """The spacing of FP32 values at magnitude v: 2^(floor(log2 v) - 23), and
+    the subnormal spacing 2^-149 below 2^-126."""
+    if not math.isfinite(v) or v < 0:
+        raise ValueError(f"fp32_ulp needs a finite, non-negative value, got {v}")
+    if v < 2.0**-126:
+        return 2.0**-149
+    return 2.0 ** (math.frexp(v)[1] - 1 - 23)
+
+
+# The floors of each output type: the relative L2 floor, and the max-abs
+# floor's number of ulps and ulp function.
+OUTPUT_FLOORS = {
+    "fp16": (REL_L2_FLOOR, MAX_ABS_FLOOR_ULPS, fp16_ulp),
+    "fp32": (REL_L2_FLOOR_FP32, MAX_ABS_FLOOR_ULPS_FP32, fp32_ulp),
+}
+
+
+def _floors(output: str):
+    if output not in OUTPUT_FLOORS:
+        raise ValueError(f"output must be one of {sorted(OUTPUT_FLOORS)}, got {output!r}")
+    return OUTPUT_FLOORS[output]
 
 
 def errors(out: torch.Tensor, ref: torch.Tensor, chunk: int = 1 << 22) -> Errors:
@@ -220,22 +256,25 @@ def check_gate(
     factor: float,
     flint_errors: list,
     peer_errors: list,
+    output: str = "fp16",
 ) -> Bounds:
-    """Applies the gate to per-seed Errors and returns the bounds. Raises
-    AssertionError, with every seed's errors beside the bounds, on a failure."""
+    """Applies the gate to per-seed Errors and returns the bounds. output
+    ("fp16" or "fp32") picks the floors. Raises AssertionError, with every
+    seed's errors beside the bounds, on a failure."""
+    rel_floor, floor_ulps, ulp = _floors(output)
     if len(flint_errors) != len(peer_errors) or not flint_errors:
         raise ValueError("need one Errors per seed for both Flint and the peer")
     peer_rel = max(e.rel_l2 for e in peer_errors)
     peer_max = max(e.max_abs for e in peer_errors)
-    rel_bound = max(factor * peer_rel, REL_L2_FLOOR)
+    rel_bound = max(factor * peer_rel, rel_floor)
     # The floor depends on each seed's reference, so the max-abs bound does too.
     max_bounds = [
-        max(factor * peer_max, MAX_ABS_FLOOR_ULPS * fp16_ulp(e.ref_max)) for e in flint_errors
+        max(factor * peer_max, floor_ulps * ulp(e.ref_max)) for e in flint_errors
     ]
 
     lines = [
         f"gate factor {factor}: peer worst rel_l2 {peer_rel:.4g}, max_abs {peer_max:.4g}; "
-        f"rel_l2 bound {rel_bound:.4g} (floor {REL_L2_FLOOR:.4g})"
+        f"rel_l2 bound {rel_bound:.4g} (floor {rel_floor:.4g})"
     ]
     failed = not (math.isfinite(peer_rel) and math.isfinite(peer_max))
     if failed:
@@ -255,13 +294,15 @@ def check_gate(
     return Bounds(rel_bound, max(max_bounds))
 
 
-def gate(factor: float, seeds) -> Bounds:
+def gate(factor: float, seeds, output: str = "fp16") -> Bounds:
     """Runs the gate over an iterable of (flint_out, peer_out, reference)
-    triples, one per seed, each with a common shape. Returns the bounds."""
+    triples, one per seed, each with a common shape. output ("fp16" or "fp32")
+    picks the floors. Returns the bounds."""
+    _floors(output)
     flint_errors = []
     peer_errors = []
     for flint_out, peer_out, ref in seeds:
         flint_errors.append(errors(flint_out, ref))
         peer_errors.append(errors(peer_out, ref))
         del flint_out, peer_out, ref
-    return check_gate(factor, flint_errors, peer_errors)
+    return check_gate(factor, flint_errors, peer_errors, output)
