@@ -58,11 +58,13 @@ GEMM_KERNELS = [
     pytest.param("17gemm_nt_bias_geluE", id="nt_bias_gelu"),
     pytest.param("13gemm_nn_dgeluE", id="nn_dgelu"),
     pytest.param("21gemm_nt_bias_residualE", id="nt_bias_residual"),
+    pytest.param("15gemm_nt_batchedE", id="nt_batched"),
+    pytest.param("15gemm_nn_batchedE", id="nn_batched"),
 ]
 
 # The kernels of the NN layout, whose w tile (k x n in memory) needs the
 # transposing ldmatrix.
-NN_KERNELS = ("7gemm_nnE", "13gemm_nn_dgeluE")
+NN_KERNELS = ("7gemm_nnE", "13gemm_nn_dgeluE", "15gemm_nn_batchedE")
 
 
 @pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
@@ -370,3 +372,80 @@ def test_data_movement_kernels_have_no_spills_or_atomics(arch, symbol):
     # The extraction finds something: each kernel loads and stores global memory.
     assert any(op.startswith("LDG") for op in opcodes(body)), name
     assert any(op.startswith("STG") for op in opcodes(body)), name
+
+
+# -- The batched GEMMs --------------------------------------------------------
+
+# Each batched kernel with the plain kernel of its layout, by the length-prefixed
+# names in their mangled symbols.
+BATCHED_KERNELS = [
+    pytest.param("15gemm_nt_batchedE", "7gemm_ntE", id="nt"),
+    pytest.param("15gemm_nn_batchedE", "7gemm_nnE", id="nn"),
+    pytest.param("15gemm_tn_batchedE", "7gemm_tnE", id="tn"),
+]
+
+
+def only_kernel(functions, symbol):
+    """The (name, SASS) of the one kernel whose mangled name has the symbol."""
+    kernels = {name: body for name, body in functions.items() if symbol in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    return name, body
+
+
+def hmma_count(loop):
+    return sum("HMMA" in item[1] for item in loop)
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+@pytest.mark.parametrize("symbol, plain_symbol", BATCHED_KERNELS)
+def test_batched_gemm_kernels_have_no_spills_or_atomics_and_the_plain_loops_hmmas(
+    arch, symbol, plain_symbol
+):
+    functions = library_functions(arch)
+    name, body = only_kernel(functions, symbol)
+    _, plain_body = only_kernel(functions, plain_symbol)
+    assert_no_spills_or_atomics(name, body)
+    # The batch's corner is 64-bit address arithmetic, which makes the loop longer than the
+    # plain kernel's (165 instructions against 130 for NT), so only its tensor-core work is
+    # pinned: the same HMMAs, 64 per step of 32 in k.
+    batched, plain = main_loop(body)[0], main_loop(plain_body)[0]
+    assert hmma_count(batched) == hmma_count(plain) == 64, name
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+def test_gemm_tn_batched_uses_hmma_and_transposed_ldmatrix_and_stores_fp16(arch):
+    name, body = only_kernel(library_functions(arch), "15gemm_tn_batchedE")
+    # As the plain TN's: FP32 accumulation, and both fragments from the transposing
+    # ldmatrix, since x (k x m) and w (k x n) have k as their rows.
+    assert "HMMA.1688.F32" in body, name
+    assert "LDSM.16.MT88" in body, name
+    assert "LDSM.16.M88" not in body, name
+    assert_no_spills_or_atomics(name, body)
+
+    # But y is FP16, written once: after the loop the sums convert to FP16 (F2F on sm_75,
+    # F2FP on sm_89) and go out as 32-bit pairs, 2 for each of the 16 tiles of m16n8 a thread
+    # holds (the rows 8 apart), with no read of y (the plain kernel's accumulate reads FP32
+    # pairs back with 64-bit loads, and writes them with 64-bit stores).
+    _, loop_end = main_loop(body)
+    after = [text for address, text, _, _ in instructions(body) if address > loop_end]
+    memory = [next(word for word in text.split() if word[:3] in ("LDG", "STG")).replace(".SYS", "")
+              for text in after if "LDG" in text or "STG" in text]
+    assert not [op for op in memory if op.startswith("LDG")], memory
+    assert not [op for op in memory if ".64" in op or ".128" in op], memory
+    assert memory.count("STG.E") == 32, memory
+    assert any(("F2F" in text or "F2FP" in text) and "F16" in text for text in after), name
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+def test_gemm_nt_batched_scales_in_fp32_before_it_converts(arch):
+    name, body = only_kernel(library_functions(arch), "15gemm_nt_batchedE")
+    _, loop_end = main_loop(body)
+    after = [sass_loop.PREDICATE.sub("", text).split()[0]
+             for address, text, _, _ in instructions(body) if address > loop_end]
+    # Every sum is multiplied by the scale in FP32 (4 for each of the 16 tiles of m16n8 a
+    # thread holds), and rounds to FP16 only in the conversion that follows, so a sum past
+    # FP16's range that the scale brings back stays finite. No FP16 arithmetic touches the
+    # outputs.
+    assert after.count("FMUL") == 64, name
+    assert not [op for op in after if op.split(".")[0] in ("HMUL2", "HADD2")], name

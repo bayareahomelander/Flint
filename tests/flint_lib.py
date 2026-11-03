@@ -130,6 +130,46 @@ SIGNATURES = {
         ctypes.c_int,
         [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)],
     ),
+    "flint_gemm_nt_batched": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_float,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_gemm_nn_batched": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_gemm_tn_batched": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
     "flint_layernorm_forward": (
         ctypes.c_int,
         [
@@ -343,6 +383,36 @@ class Flint:
             self.lib.flint_gemm_tn(
                 pointer(y), pointer(x), pointer(w), m, n, k, int(bool(accumulate)),
                 pointer(workspace), workspace_bytes, stream_handle(stream),
+            )
+        )
+
+    def gemm_nt_batched(
+        self, y, x, w, batches: int, m: int, n: int, k: int, scale=1.0, stream=None
+    ) -> None:
+        """y[j] = scale x[j] w[j]^T for batches FP16 matrices in a row: y[j] is
+        m x n, x[j] m x k, w[j] n x k. The FP32 sums get the scale before they
+        round."""
+        self.check(
+            self.lib.flint_gemm_nt_batched(
+                pointer(y), pointer(x), pointer(w), batches, m, n, k, scale, stream_handle(stream)
+            )
+        )
+
+    def gemm_nn_batched(self, y, x, w, batches: int, m: int, n: int, k: int, stream=None) -> None:
+        """y[j] = x[j] w[j] for batches FP16 matrices in a row: y[j] is m x n,
+        x[j] m x k, w[j] k x n."""
+        self.check(
+            self.lib.flint_gemm_nn_batched(
+                pointer(y), pointer(x), pointer(w), batches, m, n, k, stream_handle(stream)
+            )
+        )
+
+    def gemm_tn_batched(self, y, x, w, batches: int, m: int, n: int, k: int, stream=None) -> None:
+        """y[j] = x[j]^T w[j] for batches matrices in a row: FP16 y[j] (m x n),
+        rounded once from FP32 sums, and FP16 x[j] (k x m) and w[j] (k x n)."""
+        self.check(
+            self.lib.flint_gemm_tn_batched(
+                pointer(y), pointer(x), pointer(w), batches, m, n, k, stream_handle(stream)
             )
         )
 

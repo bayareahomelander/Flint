@@ -137,6 +137,38 @@ FLINT_API flint_status flint_gemm_tn(void* y, const void* x, const void* w, size
  * in *bytes: 0 when it needs none. It depends on the GPU's SM count. */
 FLINT_API flint_status flint_gemm_tn_workspace(size_t m, size_t n, size_t k, size_t* bytes);
 
+/* Runs y[j] = scale x[j] w[j]^T for batches matrices at a time in one launch,
+ * asynchronously on stream, as attention's heads need. Each batch's y[j]
+ * (m x n), x[j] (m x k) and w[j] (n x k) directly follow the last batch's, all
+ * row-major, contiguous FP16 in device memory. Products accumulate in FP32, the
+ * sums are multiplied by scale in FP32, and each output rounds to FP16 once, so
+ * a sum past FP16's range that scale brings back in stays finite. With a scale
+ * of 1, each batch's result is flint_gemm_nt's bit for bit, except that a NaN
+ * may carry other bits. The result is deterministic.
+ *
+ * batches can be up to 65,535, and m up to 1,024; scale must be finite.
+ * Everything else is as for flint_gemm_nt, with y, x and w covering all batches.
+ * A batches, m or n of 0 does nothing. */
+FLINT_API flint_status flint_gemm_nt_batched(void* y, const void* x, const void* w, size_t batches,
+                                             size_t m, size_t n, size_t k, float scale,
+                                             flint_stream stream);
+
+/* Runs y[j] = x[j] w[j] for batches matrices at a time, with x[j] m x k and w[j]
+ * k x n. Each batch's result is flint_gemm_nn's bit for bit. The limits on batches
+ * and m are flint_gemm_nt_batched's; everything else is as for flint_gemm_nn, with
+ * y, x and w covering all batches. */
+FLINT_API flint_status flint_gemm_nn_batched(void* y, const void* x, const void* w, size_t batches,
+                                             size_t m, size_t n, size_t k, flint_stream stream);
+
+/* Runs y[j] = x[j]^T w[j] for batches matrices at a time, with x[j] k x m and w[j]
+ * k x n. Unlike flint_gemm_tn, y is FP16: each output's FP32 sum rounds once. k
+ * never splits, so there's no workspace. Each batch's result is flint_gemm_tn's
+ * rounded to FP16 bit for bit, wherever that doesn't split k, except that a NaN may
+ * carry other bits. The limits on batches and m are flint_gemm_nt_batched's;
+ * everything else is as for flint_gemm_tn, with y, x and w covering all batches. */
+FLINT_API flint_status flint_gemm_tn_batched(void* y, const void* x, const void* w, size_t batches,
+                                             size_t m, size_t n, size_t k, flint_stream stream);
+
 /* LayerNorm's forward pass, asynchronously on stream. For each row of x, a
  * rows x cols FP32 matrix, it computes the row's mean and its biased variance,
  * the mean of squared deviations from the mean, then

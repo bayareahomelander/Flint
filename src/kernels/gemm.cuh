@@ -11,6 +11,10 @@ namespace flint {
 // dimension. m has the same limit, which its z dimension covers with room to
 // spare.
 constexpr size_t kGemmMaxMN = 65535 * 128;
+// The batched kernels' limits: a batch's m fits one group of tiles, GPT-2's
+// longest context, and the grid's z dimension holds the batches.
+constexpr size_t kGemmBatchedMaxM = 1024;
+constexpr size_t kGemmMaxBatches = 65535;
 
 // Launches y = x w^T on stream, for row-major FP16 matrices: y is m x n, x is
 // m x k, and w is n x k. Expects the checks flint_gemm_nt makes: m and n
@@ -57,5 +61,18 @@ cudaError_t gemm_tn_workspace(int m, int n, int k, size_t* bytes);
 // workspace of gemm_tn_workspace's size when that isn't 0.
 cudaError_t launch_gemm_tn(void* y, const void* x, const void* w, int m, int n, int k,
                            bool accumulate, void* workspace, cudaStream_t stream);
+
+// Launch the layouts over batches matrices at a time on stream, each batch's
+// matrices directly after the last's: y[j] = scale x[j] w[j]^T, y[j] = x[j] w[j]
+// and y[j] = x[j]^T w[j], all FP16, with each layout's shapes as above. The FP32
+// sums get the scale before they round; TN doesn't split k. Expect the checks of
+// flint_gemm_nt_batched, flint_gemm_nn_batched and flint_gemm_tn_batched, which
+// add the limits above.
+cudaError_t launch_gemm_nt_batched(void* y, const void* x, const void* w, int batches, int m,
+                                   int n, int k, float scale, cudaStream_t stream);
+cudaError_t launch_gemm_nn_batched(void* y, const void* x, const void* w, int batches, int m,
+                                   int n, int k, cudaStream_t stream);
+cudaError_t launch_gemm_tn_batched(void* y, const void* x, const void* w, int batches, int m,
+                                   int n, int k, cudaStream_t stream);
 
 }  // namespace flint

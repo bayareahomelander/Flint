@@ -1,7 +1,10 @@
 // flint_gemm_nt, flint_gemm_nt_bias, flint_gemm_nt_bias_gelu,
-// flint_gemm_nt_bias_residual, flint_gemm_nn, flint_gemm_nn_dgelu and
-// flint_gemm_tn: check the arguments, then launch the GEMM kernel for their
-// layout and epilogue.
+// flint_gemm_nt_bias_residual, flint_gemm_nn, flint_gemm_nn_dgelu, flint_gemm_tn
+// and the batched functions: check the arguments, then launch the GEMM kernel for
+// their layout and epilogue.
+#include <cmath>
+#include <iterator>
+
 #include "common/checks.h"
 #include "common/error.h"
 #include "kernels/gemm.cuh"
@@ -121,6 +124,45 @@ flint_status check_tn_dims(const char* name, size_t m, size_t n, size_t k) {
                            "%s: %zu x %zu x %zu is too large: m and n can be up to %zu, and k up "
                            "to %zu",
                            name, m, n, k, flint::kGemmMaxMN, kMaxK);
+    }
+    return FLINT_OK;
+}
+
+// The batched functions' checks, after each layout's own on m, n and k. Whichever
+// way a layout stores them, x holds m * k halves per batch and w holds n * k.
+flint_status check_batched(const char* name, void* y, const void* x, const void* w,
+                           size_t batches, size_t m, size_t n, size_t k) {
+    if (batches > flint::kGemmMaxBatches) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: batches (%zu) can be up to %zu",
+                           name, batches, flint::kGemmMaxBatches);
+    }
+    if (m > flint::kGemmBatchedMaxM) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: m (%zu) can be up to %zu", name, m,
+                           flint::kGemmBatchedMaxM);
+    }
+    // The size limits keep these products far below 2^64.
+    const flint::Buffer buffers[] = {
+        {"y", y, batches * m * n * 2},
+        {"x", x, batches * m * k * 2},
+        {"w", w, batches * n * k * 2},
+    };
+    return flint::check_buffers(name, buffers, std::size(buffers), 1);
+}
+
+// NT's and NN's k, and NN's n, as check_nt_nn has them.
+flint_status check_batched_nt_nn(const char* name, bool n_in_chunks, size_t n, size_t k) {
+    if (k == 0 || k % 8 != 0) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
+                           "%s: k (%zu) must be a positive multiple of 8", name, k);
+    }
+    if (n_in_chunks && n % 8 != 0) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: n (%zu) must be a multiple of 8",
+                           name, n);
+    }
+    if (n > flint::kGemmMaxMN || k > kMaxK) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
+                           "%s: n (%zu) can be up to %zu, and k (%zu) up to %zu", name, n,
+                           flint::kGemmMaxMN, k, kMaxK);
     }
     return FLINT_OK;
 }
@@ -347,5 +389,66 @@ flint_status flint_gemm_tn(void* y, const void* x, const void* w, size_t m, size
     FLINT_CUDA_CHECK(flint::launch_gemm_tn(y, x, w, static_cast<int>(m), static_cast<int>(n),
                                            static_cast<int>(k), accumulate != 0, workspace,
                                            stream));
+    return FLINT_OK;
+}
+
+flint_status flint_gemm_nt_batched(void* y, const void* x, const void* w, size_t batches, size_t m,
+                                   size_t n, size_t k, float scale, flint_stream stream) {
+    if (batches == 0 || m == 0 || n == 0) {
+        return FLINT_OK;
+    }
+    constexpr const char* name = "flint_gemm_nt_batched";
+    if (const flint_status status = check_batched_nt_nn(name, false, n, k); status != FLINT_OK) {
+        return status;
+    }
+    if (!std::isfinite(scale)) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: scale (%g) must be finite", name,
+                           static_cast<double>(scale));
+    }
+    if (const flint_status status = check_batched(name, y, x, w, batches, m, n, k);
+        status != FLINT_OK) {
+        return status;
+    }
+    FLINT_CUDA_CHECK(flint::launch_gemm_nt_batched(y, x, w, static_cast<int>(batches),
+                                                   static_cast<int>(m), static_cast<int>(n),
+                                                   static_cast<int>(k), scale, stream));
+    return FLINT_OK;
+}
+
+flint_status flint_gemm_nn_batched(void* y, const void* x, const void* w, size_t batches, size_t m,
+                                   size_t n, size_t k, flint_stream stream) {
+    if (batches == 0 || m == 0 || n == 0) {
+        return FLINT_OK;
+    }
+    constexpr const char* name = "flint_gemm_nn_batched";
+    if (const flint_status status = check_batched_nt_nn(name, true, n, k); status != FLINT_OK) {
+        return status;
+    }
+    if (const flint_status status = check_batched(name, y, x, w, batches, m, n, k);
+        status != FLINT_OK) {
+        return status;
+    }
+    FLINT_CUDA_CHECK(flint::launch_gemm_nn_batched(y, x, w, static_cast<int>(batches),
+                                                   static_cast<int>(m), static_cast<int>(n),
+                                                   static_cast<int>(k), stream));
+    return FLINT_OK;
+}
+
+flint_status flint_gemm_tn_batched(void* y, const void* x, const void* w, size_t batches, size_t m,
+                                   size_t n, size_t k, flint_stream stream) {
+    if (batches == 0 || m == 0 || n == 0) {
+        return FLINT_OK;
+    }
+    constexpr const char* name = "flint_gemm_tn_batched";
+    if (const flint_status status = check_tn_dims(name, m, n, k); status != FLINT_OK) {
+        return status;
+    }
+    if (const flint_status status = check_batched(name, y, x, w, batches, m, n, k);
+        status != FLINT_OK) {
+        return status;
+    }
+    FLINT_CUDA_CHECK(flint::launch_gemm_tn_batched(y, x, w, static_cast<int>(batches),
+                                                   static_cast<int>(m), static_cast<int>(n),
+                                                   static_cast<int>(k), stream));
     return FLINT_OK;
 }

@@ -6,7 +6,9 @@
 // layout can also add a bias to its outputs before they round, and then apply
 // GELU or add the result to the FP32 residual stream, and the input-gradient
 // layout can multiply its outputs by GELU's derivative, GELU's backward pass.
-// This first version is plain: one shared-memory stage with padded rows, and
+// Batched kernels run the layouts over many same-shaped matrices in one launch,
+// as attention's heads need; their TN writes FP16, and their forward layout can
+// scale its outputs before they round. This first version is plain: one shared-memory stage with padded rows, and
 // no overlap of loads with math. The tuning deliverables build on it.
 #include "kernels/gemm.cuh"
 
@@ -56,9 +58,10 @@ enum class Layout { kNT, kNN, kTN };
 // What the output stage does to the FP32 sums before they round to FP16 y:
 // nothing; add an FP32 bias to each column; add the bias, keep that sum as
 // GELU's input for the backward pass, and apply GELU; in the backward pass,
-// multiply each sum by GELU's derivative at that stored input; or add the bias
-// and then the FP32 residual stream, into an FP32 y that never rounds to FP16.
-enum class Epilogue { kNone, kBias, kBiasGelu, kDGelu, kBiasResidual };
+// multiply each sum by GELU's derivative at that stored input; add the bias and
+// then the FP32 residual stream, into an FP32 y that never rounds to FP16; or
+// multiply each sum by one FP32 factor.
+enum class Epilogue { kNone, kBias, kBiasGelu, kDGelu, kBiasResidual, kScale };
 
 // TN's split of k, and where its output goes. The grid's z holds `groups`
 // groups of rows of tiles for each split in turn.
@@ -262,6 +265,26 @@ __device__ __forceinline__ void apply_epilogue<Epilogue::kBias>(
     }
 }
 
+// The scale epilogue multiplies every sum by one factor, so that attention's
+// 1/8 applies before the sums round. The bias argument points at the factor,
+// the kernel's own argument, and inlining leaves no memory access behind.
+template <>
+__device__ __forceinline__ void apply_epilogue<Epilogue::kScale>(
+    float (&acc)[kTilesM][kTilesN][4], const float* __restrict__ scale, void* __restrict__, int,
+    int, int, int, int, int) {
+    const float s = *scale;
+#pragma unroll
+    for (int i = 0; i < kTilesM; ++i) {
+#pragma unroll
+        for (int j = 0; j < kTilesN; ++j) {
+            acc[i][j][0] *= s;
+            acc[i][j][1] *= s;
+            acc[i][j][2] *= s;
+            acc[i][j][3] *= s;
+        }
+    }
+}
+
 // Stores a thread's outputs in y (m x n, FP16 unless the epilogue says
 // otherwise): the epilogue's work on the sums, then each pair rounded to FP16.
 template <Epilogue E>
@@ -390,15 +413,17 @@ __device__ __forceinline__ void store_outputs<Epilogue::kBiasResidual>(
 
 // The body of every kernel, which differ in how x and w are stored, in TN's
 // FP32 output and split of k, and in the epilogue applied to the outputs of
-// the others. bias and aux are the epilogue's (see apply_epilogue).
-template <Layout L, Epilogue E>
+// the others. bias and aux are the epilogue's (see apply_epilogue). In a batched
+// kernel, the grid's z is the batch, whose matrices the kernel has already
+// found; m has one group's rows of tiles at most, and its TN writes FP16.
+template <Layout L, Epilogue E, bool Batched = false>
 __device__ __forceinline__ void gemm(void* __restrict__ y, const __half* __restrict__ x,
                                      const __half* __restrict__ w, int m, int n, int k,
                                      TnArgs tn, const float* __restrict__ bias,
                                      void* __restrict__ aux) {
     constexpr bool nt = L == Layout::kNT;
     constexpr bool tn_layout = L == Layout::kTN;
-    static_assert(!tn_layout || E == Epilogue::kNone, "TN's FP32 output has no epilogue");
+    static_assert(!tn_layout || E == Epilogue::kNone, "TN has no epilogue");
     // NT and NN: 128 rows of m, each 32 halves of k. TN: 32 rows of k, each
     // 128 of m.
     __shared__ alignas(16)
@@ -413,8 +438,8 @@ __device__ __forceinline__ void gemm(void* __restrict__ y, const __half* __restr
     const int warp_n = warp % kWarpsN * kWarpN;
     // TN's z holds the groups of each split of k in turn.
     [[maybe_unused]] int split = 0;
-    int group = static_cast<int>(blockIdx.z);
-    if constexpr (tn_layout) {
+    int group = Batched ? 0 : static_cast<int>(blockIdx.z);
+    if constexpr (tn_layout && !Batched) {
         split = group / tn.groups;
         group -= split * tn.groups;
     }
@@ -538,7 +563,7 @@ __device__ __forceinline__ void gemm(void* __restrict__ y, const __half* __restr
 
     const int g = lane / 4;
     const int t = lane % 4;
-    if constexpr (tn_layout) {
+    if constexpr (tn_layout && !Batched) {
         // One split writes y, or adds into it; several write their own sums,
         // which gemm_tn_reduce adds up.
         float* out = tn.partials ? tn.partials + size_t(split) * m * n : static_cast<float*>(y);
@@ -615,6 +640,41 @@ __global__ void __launch_bounds__(kThreads, 2)
     gemm<Layout::kTN, Epilogue::kNone>(y, x, w, m, n, k, tn, nullptr, nullptr);
 }
 
+// The batched kernels: the grid's z is the batch, and each batch's matrices
+// follow the last's, so a batch's corner is 64 bits from the start. The scale
+// comes last, as the epilogues' arguments do.
+static_assert(kBlockM * kGroupM == kGemmBatchedMaxM, "a batch's m fits one group of tiles");
+
+__global__ void __launch_bounds__(kThreads, 2)
+    gemm_nt_batched(__half* __restrict__ y, const __half* __restrict__ x,
+                    const __half* __restrict__ w, int m, int n, int k, float scale) {
+    const size_t batch = blockIdx.z;
+    gemm<Layout::kNT, Epilogue::kScale, true>(y + batch * m * n, x + batch * m * k,
+                                              w + batch * n * k, m, n, k, TnArgs{}, &scale,
+                                              nullptr);
+}
+
+__global__ void __launch_bounds__(kThreads, 2)
+    gemm_nn_batched(__half* __restrict__ y, const __half* __restrict__ x,
+                    const __half* __restrict__ w, int m, int n, int k) {
+    const size_t batch = blockIdx.z;
+    gemm<Layout::kNN, Epilogue::kNone, true>(y + batch * m * n, x + batch * m * k,
+                                             w + batch * k * n, m, n, k, TnArgs{}, nullptr,
+                                             nullptr);
+}
+
+// One split of all of k, into FP16 y: a batch's tiles alone keep the slots busy
+// at attention's shapes.
+__global__ void __launch_bounds__(kThreads, 2)
+    gemm_tn_batched(__half* __restrict__ y, const __half* __restrict__ x,
+                    const __half* __restrict__ w, int m, int n, int k) {
+    const size_t batch = blockIdx.z;
+    TnArgs tn;
+    tn.split_len = k;
+    gemm<Layout::kTN, Epilogue::kNone, true>(y + batch * m * n, x + batch * k * m,
+                                             w + batch * k * n, m, n, k, tn, nullptr, nullptr);
+}
+
 // Sums a split TN GEMM's partial outputs in split order, and writes y or adds
 // into it: y = old + (p0 + p1 + ... + p(S-1)), the same order a single split
 // uses (old + sum), whichever split finished first. count is a multiple of 4.
@@ -650,6 +710,13 @@ dim3 grid_for(int m, int n, int splits, int* groups) {
     *groups = (tiles_m + group - 1) / group;
     return dim3(static_cast<unsigned>(group), static_cast<unsigned>((n + kBlockN - 1) / kBlockN),
                 static_cast<unsigned>(*groups * splits));
+}
+
+// A batched kernel's grid: one group of tiles per batch.
+dim3 batched_grid(int batches, int m, int n) {
+    return dim3(static_cast<unsigned>((m + kBlockM - 1) / kBlockM),
+                static_cast<unsigned>((n + kBlockN - 1) / kBlockN),
+                static_cast<unsigned>(batches));
 }
 
 using Kernel = void (*)(__half*, const __half*, const __half*, int, int, int);
@@ -800,6 +867,30 @@ cudaError_t launch_gemm_tn(void* y, const void* x, const void* w, int m, int n, 
     const size_t blocks = std::clamp<size_t>((count / 4 + kThreads - 1) / kThreads, 1, 4096);
     gemm_tn_reduce<<<static_cast<unsigned>(blocks), kThreads, 0, stream>>>(
         static_cast<float*>(y), tn.partials, count, splits.count, tn.accumulate);
+    return cudaGetLastError();
+}
+
+cudaError_t launch_gemm_nt_batched(void* y, const void* x, const void* w, int batches, int m,
+                                   int n, int k, float scale, cudaStream_t stream) {
+    gemm_nt_batched<<<batched_grid(batches, m, n), kThreads, 0, stream>>>(
+        static_cast<__half*>(y), static_cast<const __half*>(x), static_cast<const __half*>(w), m,
+        n, k, scale);
+    return cudaGetLastError();
+}
+
+cudaError_t launch_gemm_nn_batched(void* y, const void* x, const void* w, int batches, int m,
+                                   int n, int k, cudaStream_t stream) {
+    gemm_nn_batched<<<batched_grid(batches, m, n), kThreads, 0, stream>>>(
+        static_cast<__half*>(y), static_cast<const __half*>(x), static_cast<const __half*>(w), m,
+        n, k);
+    return cudaGetLastError();
+}
+
+cudaError_t launch_gemm_tn_batched(void* y, const void* x, const void* w, int batches, int m,
+                                   int n, int k, cudaStream_t stream) {
+    gemm_tn_batched<<<batched_grid(batches, m, n), kThreads, 0, stream>>>(
+        static_cast<__half*>(y), static_cast<const __half*>(x), static_cast<const __half*>(w), m,
+        n, k);
     return cudaGetLastError();
 }
 
