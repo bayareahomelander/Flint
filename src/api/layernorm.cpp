@@ -1,5 +1,6 @@
 // flint_layernorm_forward: checks the arguments, then launches the kernel.
 #include <cmath>
+#include <iterator>
 
 #include "common/checks.h"
 #include "common/error.h"
@@ -26,14 +27,9 @@ flint_status flint_layernorm_forward(void* y, void* mean, void* rstd, const void
         return FLINT_OK;
     }
 
-    // Outputs first, then inputs, in the order of the parameters.
-    struct Buffer {
-        const char* name;
-        const void* pointer;
-        size_t bytes;
-    };
-    // The limits keep rows * cols * 4 far below 2^64.
-    const Buffer buffers[] = {
+    // Outputs first, then inputs, in the order of the parameters. The limits keep
+    // rows * cols * 4 far below 2^64.
+    const flint::Buffer buffers[] = {
         {"y", y, rows * cols * 2},
         {"mean", mean, rows * 4},
         {"rstd", rstd, rows * 4},
@@ -41,32 +37,11 @@ flint_status flint_layernorm_forward(void* y, void* mean, void* rstd, const void
         {"gamma", gamma, cols * 4},
         {"beta", beta, cols * 4},
     };
-    constexpr int kBuffers = static_cast<int>(sizeof buffers / sizeof buffers[0]);
-    constexpr int kOutputs = 3;
-    for (const Buffer& b : buffers) {
-        if (b.pointer == nullptr) {
-            return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: %s is null", name, b.name);
-        }
-        if (!flint::aligned16(b.pointer)) {
-            return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: %s is not 16-byte aligned",
-                               name, b.name);
-        }
-        if (!flint::fits(b.pointer, b.bytes)) {
-            return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
-                               "%s: %s runs past the end of the address space", name, b.name);
-        }
-    }
     // Each output must not overlap any other buffer; the inputs may share
     // memory, since they are only read.
-    for (int i = 0; i < kOutputs; ++i) {
-        for (int j = i + 1; j < kBuffers; ++j) {
-            const Buffer& a = buffers[i];
-            const Buffer& b = buffers[j];
-            if (flint::overlap(a.pointer, a.bytes, b.pointer, b.bytes)) {
-                return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: %s and %s overlap", name,
-                                   a.name, b.name);
-            }
-        }
+    const flint_status checked = flint::check_buffers(name, buffers, std::size(buffers), 3);
+    if (checked != FLINT_OK) {
+        return checked;
     }
     FLINT_CUDA_CHECK(flint::launch_layernorm_forward(y, mean, rstd, x, gamma, beta, rows,
                                                      static_cast<int>(cols), eps, stream));

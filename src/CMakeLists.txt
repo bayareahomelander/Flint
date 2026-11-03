@@ -1,13 +1,20 @@
 # The Flint runtime library. It links only the static CUDA runtime: cuBLAS,
 # NVML, and PyTorch belong to the tests and benchmarks, never to this target.
 add_library(flint SHARED
+  api/convert.cpp
   api/copy.cpp
+  api/embedding.cpp
   api/gemm.cpp
+  api/heads.cpp
   api/layernorm.cpp
   api/status.cpp
+  common/checks.cpp
   common/error.cpp
+  kernels/convert.cu
   kernels/copy.cu
+  kernels/embedding.cu
   kernels/gemm.cu
+  kernels/heads.cu
   kernels/layernorm.cu
 )
 target_include_directories(flint

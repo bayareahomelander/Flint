@@ -739,7 +739,7 @@ def test_eps_must_be_finite_and_not_negative(flint, eps, text):
 
 # The bytes each buffer covers in the overlap tests, for 8 rows of 16 columns.
 SIZES = {"y": 256, "mean": 32, "rstd": 32, "x": 512, "gamma": 64, "beta": 64}
-ARENA_BYTES = 1 << 16
+ARENA_BYTES = 1 << 17
 SPACING = 4096
 
 

@@ -159,6 +159,66 @@ FLINT_API flint_status flint_layernorm_forward(void* y, void* mean, void* rstd, 
                                                const void* gamma, const void* beta, size_t rows,
                                                size_t cols, float eps, flint_stream stream);
 
+/* The embedding's forward pass, asynchronously on stream. tokens holds
+ * sequences * length uint16 values, one per row of x, sequence after sequence;
+ * wte is the word table (vocab x width FP32) and wpe the position table (at
+ * least length x width FP32; only its first length rows are read). For row
+ * r = s * length + t, x[r, :] = wte[tokens[r], :] + wpe[t, :], one FP32 add
+ * each, so positions restart at 0 in every sequence. x is
+ * (sequences * length) x width FP32. Matrices are row-major and contiguous, in
+ * device memory. The result is deterministic.
+ *
+ * Every token must be less than vocab: the function doesn't check, since that
+ * would need a wait on the GPU, and a larger token reads out of bounds. The
+ * caller checks.
+ *
+ * width must be a positive multiple of 8, up to 2^24, and vocab from 1 to
+ * 65,536. The number of rows, sequences * length, can be up to
+ * 17,179,869,176. All pointers must be 16-byte aligned. x must not overlap
+ * tokens, wte or wpe; those may share memory. A sequences or length of 0 does
+ * nothing. */
+FLINT_API flint_status flint_embedding_forward(void* x, const void* tokens, const void* wte,
+                                               const void* wpe, size_t sequences, size_t length,
+                                               size_t vocab, size_t width, flint_stream stream);
+
+/* Converts count FP32 values at x to FP16 at y, asynchronously on stream. Each
+ * value rounds to nearest, ties to even, so overflow gives inf (nothing
+ * saturates) and a NaN stays a NaN. Any count works, not only multiples of 4,
+ * up to SIZE_MAX / 4. Both pointers must be 16-byte aligned, and y must not
+ * overlap x. A count of 0 does nothing. */
+FLINT_API flint_status flint_fp32_to_fp16(void* y, const void* x, size_t count,
+                                          flint_stream stream);
+
+/* Splits a row buffer into attention heads, asynchronously on stream. x holds
+ * rows of row_width FP16 values, batches * length of them ("rows layout"), and
+ * y is batches x heads x length x head_width FP16 ("heads layout"), both
+ * row-major and contiguous, in device memory. For the columns
+ * [first, first + heads * head_width) of each row,
+ * y[b, h, t, c] = x[b * length + t, first + h * head_width + c]. The values
+ * move as bits, never through a float, so NaN payloads and -0 survive exactly.
+ * GPT-2's fused qkv rows have row_width 3 * 768, and Q, K and V are the splits
+ * with first = 0, 768 and 1536 (heads 12, head_width 64).
+ *
+ * head_width, row_width and first must be multiples of 8, with head_width and
+ * row_width positive and heads positive. The columns must lie within the row:
+ * first + heads * head_width <= row_width. row_width can be up to 2^24, and the
+ * number of rows, batches * length, up to 17,179,869,176. Both pointers must
+ * be 16-byte aligned, and y must not overlap x (the whole of either layout's
+ * buffer counts). A batches or length of 0 does nothing. */
+FLINT_API flint_status flint_heads_split(void* y, const void* x, size_t batches, size_t length,
+                                         size_t heads, size_t head_width, size_t row_width,
+                                         size_t first, flint_stream stream);
+
+/* The reverse of flint_heads_split, asynchronously on stream: x is the heads
+ * layout and y the rows layout, and y[b * length + t, first + h * head_width + c]
+ * = x[b, h, t, c]. It writes only the columns [first, first + heads *
+ * head_width) of each row of y and leaves the others untouched, so three
+ * merges (Q, K and V) can fill one row buffer. Everything else is as for
+ * flint_heads_split. */
+FLINT_API flint_status flint_heads_merge(void* y, const void* x, size_t batches, size_t length,
+                                         size_t heads, size_t head_width, size_t row_width,
+                                         size_t first, flint_stream stream);
+
 #ifdef __cplusplus
 }
 #endif

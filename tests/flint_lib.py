@@ -145,6 +145,52 @@ SIGNATURES = {
             ctypes.c_void_p,
         ],
     ),
+    "flint_embedding_forward": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_fp32_to_fp16": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p],
+    ),
+    "flint_heads_split": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_heads_merge": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
 }
 
 
@@ -312,5 +358,51 @@ class Flint:
             self.lib.flint_layernorm_forward(
                 pointer(y), pointer(mean), pointer(rstd), pointer(x), pointer(gamma),
                 pointer(beta), rows, cols, eps, stream_handle(stream),
+            )
+        )
+
+    def embedding_forward(
+        self, x, tokens, wte, wpe, sequences: int, length: int, vocab: int, width: int, stream=None
+    ) -> None:
+        """x[s * length + t] = wte[tokens[s * length + t]] + wpe[t], in FP32:
+        tokens are uint16 (sequences * length), wte is vocab x width, wpe at
+        least length x width and x (sequences * length) x width. Tokens must
+        be below vocab; the function doesn't check."""
+        self.check(
+            self.lib.flint_embedding_forward(
+                pointer(x), pointer(tokens), pointer(wte), pointer(wpe), sequences, length, vocab,
+                width, stream_handle(stream),
+            )
+        )
+
+    def fp32_to_fp16(self, y, x, count: int, stream=None) -> None:
+        """Converts count FP32 values at x to FP16 at y, to nearest with ties
+        to even (overflow gives inf)."""
+        self.check(self.lib.flint_fp32_to_fp16(pointer(y), pointer(x), count, stream_handle(stream)))
+
+    def heads_split(
+        self, y, x, batches: int, length: int, heads: int, head_width: int, row_width: int,
+        first: int = 0, stream=None,
+    ) -> None:
+        """Splits columns [first, first + heads * head_width) of the FP16 rows
+        x (batches * length rows of row_width) into y (batches x heads x length
+        x head_width): y[b, h, t, c] = x[b * length + t, first + h * head_width + c]."""
+        self.check(
+            self.lib.flint_heads_split(
+                pointer(y), pointer(x), batches, length, heads, head_width, row_width, first,
+                stream_handle(stream),
+            )
+        )
+
+    def heads_merge(
+        self, y, x, batches: int, length: int, heads: int, head_width: int, row_width: int,
+        first: int = 0, stream=None,
+    ) -> None:
+        """The reverse of heads_split: x is the heads layout, and only the
+        columns [first, first + heads * head_width) of each row of y change."""
+        self.check(
+            self.lib.flint_heads_merge(
+                pointer(y), pointer(x), batches, length, heads, head_width, row_width, first,
+                stream_handle(stream),
             )
         )

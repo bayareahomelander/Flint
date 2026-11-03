@@ -322,6 +322,16 @@ def opcodes(body):
     return [sass_loop.PREDICATE.sub("", text).split()[0] for _, text, _, _ in instructions(body)]
 
 
+def assert_no_spills_or_atomics(name, body):
+    """The kernel keeps everything in registers (no local-memory loads or
+    stores) and uses no atomic."""
+    assert "LDL" not in body and "STL" not in body, name
+    # PLAN.md forbids floating-point atomics in reductions: the kernels' sums
+    # are a warp's shuffles, in a fixed order, and the data movers have none.
+    atomic = [op for op in opcodes(body) if op.split(".")[0] in ATOMIC_OPCODES]
+    assert not atomic, (name, atomic)
+
+
 @pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
 def test_layernorm_kernels_have_no_spills_or_atomics(arch):
     # "17layernorm_forward" is the kernel's own name, length-prefixed in the
@@ -331,13 +341,32 @@ def test_layernorm_kernels_have_no_spills_or_atomics(arch):
                if "17layernorm_forward" in name}
     assert len(kernels) == 2, sorted(kernels)
     for name, body in kernels.items():
-        assert "LDL" not in body and "STL" not in body, name
-        # PLAN.md forbids floating-point atomics in reductions: a row's sums are
-        # a warp's shuffles, in a fixed order.
-        atomic = [op for op in opcodes(body) if op.split(".")[0] in ATOMIC_OPCODES]
-        assert not atomic, (name, atomic)
+        assert_no_spills_or_atomics(name, body)
         # The extraction finds something: the warp reduction's shuffles.
         assert any(op.startswith("SHFL") for op in opcodes(body)), name
     # The vector instance loads 128 bits at a time, and the scalar one doesn't.
     for name, body in kernels.items():
         assert ("LDG.E.128" in body) == ("ILi4E" in name), name
+
+
+# -- The embedding, the conversion and the head layouts ----------------------
+
+# Each kernel, by the length-prefixed name in its mangled symbol.
+MOVER_KERNELS = [
+    pytest.param("17embedding_forward", id="embedding_forward"),
+    pytest.param("12fp32_to_fp16", id="fp32_to_fp16"),
+    pytest.param("11heads_split", id="heads_split"),
+    pytest.param("11heads_merge", id="heads_merge"),
+]
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+@pytest.mark.parametrize("symbol", MOVER_KERNELS)
+def test_data_movement_kernels_have_no_spills_or_atomics(arch, symbol):
+    kernels = {name: body for name, body in library_functions(arch).items() if symbol in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    # The extraction finds something: each kernel loads and stores global memory.
+    assert any(op.startswith("LDG") for op in opcodes(body)), name
+    assert any(op.startswith("STG") for op in opcodes(body)), name
