@@ -7,6 +7,7 @@ add_library(flint SHARED
   api/gemm.cpp
   api/heads.cpp
   api/layernorm.cpp
+  api/softmax.cpp
   api/status.cpp
   common/checks.cpp
   common/error.cpp
@@ -16,6 +17,7 @@ add_library(flint SHARED
   kernels/gemm.cu
   kernels/heads.cu
   kernels/layernorm.cu
+  kernels/softmax.cu
 )
 target_include_directories(flint
   PUBLIC ${PROJECT_SOURCE_DIR}/include

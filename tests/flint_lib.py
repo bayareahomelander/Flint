@@ -231,6 +231,16 @@ SIGNATURES = {
             ctypes.c_void_p,
         ],
     ),
+    "flint_causal_softmax_forward": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
 }
 
 
@@ -474,5 +484,15 @@ class Flint:
             self.lib.flint_heads_merge(
                 pointer(y), pointer(x), batches, length, heads, head_width, row_width, first,
                 stream_handle(stream),
+            )
+        )
+
+    def causal_softmax_forward(self, p, s, batches: int, length: int, stream=None) -> None:
+        """P from S, both FP16 batches x length x length: row t of a batch is
+        the softmax of its columns 0 to t in FP32, rounded to FP16 once, with
+        +0 in the rest. s's columns past t are ignored."""
+        self.check(
+            self.lib.flint_causal_softmax_forward(
+                pointer(p), pointer(s), batches, length, stream_handle(stream)
             )
         )

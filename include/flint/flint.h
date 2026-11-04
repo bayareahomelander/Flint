@@ -251,6 +251,27 @@ FLINT_API flint_status flint_heads_merge(void* y, const void* x, size_t batches,
                                          size_t heads, size_t head_width, size_t row_width,
                                          size_t first, flint_stream stream);
 
+/* Attention's causal softmax, asynchronously on stream. s and p are batches x
+ * length x length FP16, row-major and contiguous, in device memory, each batch
+ * directly after the last. Row t of a batch sees only its columns 0 to t:
+ * p[b, t, c] = exp(s[b, t, c] - max) / sum for c <= t, where max is the largest
+ * of those scores and sum adds exp(s[b, t, c] - max) over them. Everything is
+ * computed in FP32, and each output rounds to FP16 once, to nearest, so small
+ * probabilities can round to subnormals or 0. p[b, t, c] is +0 for c > t, and
+ * s's values there are ignored, even an inf or NaN (they must still be
+ * initialized). Each row's result depends only on t and its visible scores, and
+ * is deterministic.
+ *
+ * A visible NaN or +inf gives NaN in all the row's visible outputs, and so does
+ * a row whose visible scores are all -inf. A -inf among finite scores gives 0.
+ * A NaN's own bits aren't promised.
+ *
+ * length must be a multiple of 8 up to 1,024, and batches can be up to 65,535.
+ * Both pointers must be 16-byte aligned, and p must not overlap s. A batches or
+ * length of 0 does nothing. */
+FLINT_API flint_status flint_causal_softmax_forward(void* p, const void* s, size_t batches,
+                                                    size_t length, flint_stream stream);
+
 #ifdef __cplusplus
 }
 #endif
