@@ -6,6 +6,7 @@ add_library(flint SHARED
   api/cross_entropy.cpp
   api/embedding.cpp
   api/gemm.cpp
+  api/gpt2.cpp
   api/heads.cpp
   api/layernorm.cpp
   api/softmax.cpp

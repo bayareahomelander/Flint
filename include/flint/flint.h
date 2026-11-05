@@ -313,6 +313,92 @@ FLINT_API flint_status flint_softmax_cross_entropy(void* dlogits, void* row_loss
                                                    float scale, size_t rows, size_t vocab,
                                                    size_t cols, flint_stream stream);
 
+/* GPT-2's forward pass, from tokens to logits, each row's loss and the logits'
+ * gradient, through the functions above. A model owns its weights and buffers. */
+typedef struct flint_gpt2 flint_gpt2;
+
+/* A model's shape. width must be a multiple of 8 up to 16,384, heads must split it
+ * into multiples of 8, length a multiple of 8 up to 1,024, block_size from length
+ * to 1,024, padded_vocab a multiple of 8 up to 65,536, and vocab from 1 to
+ * padded_vocab. layers can be from 1 to 1,024. sequences must be positive, with
+ * sequences * heads up to 65,535 and sequences * length up to 8,388,480.
+ * separate_buffers nonzero gives each buffer its own allocation, so the sanitizer's
+ * memcheck sees each buffer's bounds; the results are the same bits. */
+typedef struct {
+    size_t layers;
+    size_t heads;
+    size_t width;
+    size_t block_size;
+    size_t vocab;
+    size_t padded_vocab;
+    size_t sequences;
+    size_t length;
+    int separate_buffers;
+} flint_gpt2_config;
+
+/* A master weight: rows x cols FP32 in device memory, row-major and contiguous. A
+ * bias or a LayerNorm's parameter has 1 row. name lasts as long as the model. */
+typedef struct {
+    const char* name;
+    void* data;
+    size_t rows;
+    size_t cols;
+} flint_gpt2_parameter_info;
+
+/* The device memory flint_gpt2_create would allocate, in *bytes. It doesn't touch
+ * the GPU, so a caller can hold it against a memory cap first. */
+FLINT_API flint_status flint_gpt2_bytes(const flint_gpt2_config* config, size_t* bytes);
+
+/* Creates a model, with one allocation of flint_gpt2_bytes' size (more, in smaller
+ * pieces, with separate_buffers). Its weights start uninitialized: write them
+ * through flint_gpt2_parameter, then call flint_gpt2_sync_weights. Returns
+ * FLINT_ERROR_CUDA if the memory isn't there, with *model null and nothing kept. */
+FLINT_API flint_status flint_gpt2_create(const flint_gpt2_config* config, flint_gpt2** model);
+
+/* Frees a model and its memory. Anything still using them on a stream must have
+ * finished. A null model does nothing. */
+FLINT_API void flint_gpt2_destroy(flint_gpt2* model);
+
+/* How many master weights a model has, or 0 for a null model. */
+FLINT_API size_t flint_gpt2_parameter_count(const flint_gpt2* model);
+
+/* The index-th master weight, in the order of PyTorch's named_parameters and with
+ * its names ("wte.weight", "blocks.0.attn.c_attn.bias", "ln_f.weight"). A linear
+ * layer's weight is out x in, as PyTorch's is. wte has padded_vocab rows. */
+FLINT_API flint_status flint_gpt2_parameter(const flint_gpt2* model, size_t index,
+                                            flint_gpt2_parameter_info* info);
+
+/* Rounds the master weights to their FP16 compute copies, asynchronously on stream:
+ * wte and the linear layers' weights. Biases and LayerNorm's parameters stay FP32
+ * and need no copy. Call it after changing the weights, before a forward pass. */
+FLINT_API flint_status flint_gpt2_sync_weights(flint_gpt2* model, flint_stream stream);
+
+/* Runs the model, asynchronously on stream. tokens and targets each hold sequences
+ * * length uint16 values in device memory, sequence after sequence, and must not
+ * overlap the model's outputs. Every token must be below padded_vocab and every
+ * target below vocab; as with flint_embedding_forward and
+ * flint_softmax_cross_entropy, the function doesn't check. scale must be finite,
+ * and goes to flint_softmax_cross_entropy.
+ *
+ * The buffers are reused, so a pass overwrites the last one's outputs, and the
+ * model's calls must all use one stream at a time. If a launch fails partway, the
+ * error returns and the outputs are unspecified. The result is deterministic. */
+FLINT_API flint_status flint_gpt2_forward(flint_gpt2* model, const void* tokens,
+                                          const void* targets, float scale, flint_stream stream);
+
+/* Where a forward pass leaves its outputs, in device memory, as
+ * flint_softmax_cross_entropy describes them: logits and dlogits (sequences * length)
+ * x padded_vocab FP16, row_loss sequences * length FP32. Any of the three pointers
+ * may be null, if that output isn't wanted. */
+FLINT_API flint_status flint_gpt2_outputs(const flint_gpt2* model, const void** logits,
+                                          const void** dlogits, const void** row_loss);
+
+/* Waits for stream, copies row_loss to the host, and stores its mean in *loss, added
+ * up in FP64. It reads whatever row_loss holds: before a first pass that's
+ * uninitialized, and after a failed one it's the last pass's values or a mix, so a
+ * caller must check flint_gpt2_forward's status. */
+FLINT_API flint_status flint_gpt2_mean_loss(flint_gpt2* model, flint_stream stream, double* loss);
+
 #ifdef __cplusplus
 }
 #endif

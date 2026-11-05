@@ -24,6 +24,34 @@ OK = 0
 ERROR_INVALID_ARGUMENT = 1
 ERROR_CUDA = 2
 
+
+class Gpt2Config(ctypes.Structure):
+    """flint_gpt2_config."""
+
+    _fields_ = [
+        ("layers", ctypes.c_size_t),
+        ("heads", ctypes.c_size_t),
+        ("width", ctypes.c_size_t),
+        ("block_size", ctypes.c_size_t),
+        ("vocab", ctypes.c_size_t),
+        ("padded_vocab", ctypes.c_size_t),
+        ("sequences", ctypes.c_size_t),
+        ("length", ctypes.c_size_t),
+        ("separate_buffers", ctypes.c_int),
+    ]
+
+
+class Gpt2ParameterInfo(ctypes.Structure):
+    """flint_gpt2_parameter_info."""
+
+    _fields_ = [
+        ("name", ctypes.c_char_p),
+        ("data", ctypes.c_void_p),
+        ("rows", ctypes.c_size_t),
+        ("cols", ctypes.c_size_t),
+    ]
+
+
 # Every function flint.h declares, as name: (restype, argtypes).
 SIGNATURES = {
     "flint_version": (ctypes.c_char_p, []),
@@ -254,6 +282,38 @@ SIGNATURES = {
             ctypes.c_size_t,
             ctypes.c_void_p,
         ],
+    ),
+    "flint_gpt2_bytes": (
+        ctypes.c_int,
+        [ctypes.POINTER(Gpt2Config), ctypes.POINTER(ctypes.c_size_t)],
+    ),
+    "flint_gpt2_create": (
+        ctypes.c_int,
+        [ctypes.POINTER(Gpt2Config), ctypes.POINTER(ctypes.c_void_p)],
+    ),
+    "flint_gpt2_destroy": (None, [ctypes.c_void_p]),
+    "flint_gpt2_parameter_count": (ctypes.c_size_t, [ctypes.c_void_p]),
+    "flint_gpt2_parameter": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(Gpt2ParameterInfo)],
+    ),
+    "flint_gpt2_sync_weights": (ctypes.c_int, [ctypes.c_void_p, ctypes.c_void_p]),
+    "flint_gpt2_forward": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_float, ctypes.c_void_p],
+    ),
+    "flint_gpt2_outputs": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_void_p),
+            ctypes.POINTER(ctypes.c_void_p),
+            ctypes.POINTER(ctypes.c_void_p),
+        ],
+    ),
+    "flint_gpt2_mean_loss": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)],
     ),
 }
 
@@ -525,3 +585,81 @@ class Flint:
                 vocab, cols, stream_handle(stream),
             )
         )
+
+
+class Gpt2:
+    """A flint_gpt2 model, freed by close() or on leaving a with block. Pointers to its
+    weights and outputs are device addresses, as ints, which flint_copy accepts."""
+
+    def __init__(self, flint: Flint, config: Gpt2Config):
+        self.flint = flint
+        self.config = config
+        handle = ctypes.c_void_p()
+        flint.check(flint.lib.flint_gpt2_create(ctypes.byref(config), ctypes.byref(handle)))
+        self.handle = handle.value
+
+    def close(self) -> None:
+        if self.handle is not None:
+            self.flint.lib.flint_gpt2_destroy(self.handle)
+            self.handle = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def parameters(self) -> list:
+        """(name, address, rows, cols) of each master weight, in the library's order."""
+        out = []
+        for i in range(self.flint.lib.flint_gpt2_parameter_count(self.handle)):
+            info = Gpt2ParameterInfo()
+            self.flint.check(self.flint.lib.flint_gpt2_parameter(self.handle, i, ctypes.byref(info)))
+            out.append((info.name.decode(), info.data, info.rows, info.cols))
+        return out
+
+    def load(self, state, stream=None) -> None:
+        """Copies state[name] (any FP32 device tensor of the right size, from a
+        state_dict for example) to each master weight, then syncs the compute copies."""
+        for name, address, rows, cols in self.parameters():
+            tensor = state[name].contiguous()
+            if tensor.dtype != torch.float32 or tensor.numel() != rows * cols:
+                raise ValueError(f"{name}: {tensor.dtype} {tuple(tensor.shape)}, expected FP32 {rows} x {cols}")
+            self.flint.copy(address, tensor, rows * cols * 4, stream)
+        self.sync_weights(stream)
+
+    def sync_weights(self, stream=None) -> None:
+        self.flint.check(self.flint.lib.flint_gpt2_sync_weights(self.handle, stream_handle(stream)))
+
+    def forward(self, tokens, targets, scale: float, stream=None) -> None:
+        self.flint.check(
+            self.flint.lib.flint_gpt2_forward(
+                self.handle, pointer(tokens), pointer(targets), scale, stream_handle(stream)
+            )
+        )
+
+    def outputs(self) -> tuple:
+        """The device addresses of logits, dlogits and row_loss."""
+        logits, dlogits, row_loss = ctypes.c_void_p(), ctypes.c_void_p(), ctypes.c_void_p()
+        self.flint.check(
+            self.flint.lib.flint_gpt2_outputs(
+                self.handle, ctypes.byref(logits), ctypes.byref(dlogits), ctypes.byref(row_loss)
+            )
+        )
+        return logits.value, dlogits.value, row_loss.value
+
+    def mean_loss(self, stream=None) -> float:
+        loss = ctypes.c_double()
+        self.flint.check(
+            self.flint.lib.flint_gpt2_mean_loss(self.handle, stream_handle(stream), ctypes.byref(loss))
+        )
+        return loss.value
+
+    def read(self, address: int, shape, dtype, first_element: int = 0, stream=None):
+        """A copy, as a device tensor of this shape and dtype, of the device memory at
+        address, starting first_element elements in."""
+        out = torch.empty(shape, dtype=dtype, device="cuda")
+        size = torch.empty((), dtype=dtype).element_size()
+        self.flint.copy(out, address + first_element * size, out.numel() * size, stream)
+        torch.cuda.synchronize()
+        return out

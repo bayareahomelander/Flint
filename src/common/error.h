@@ -22,11 +22,14 @@ flint_status fail(flint_status status, const char* format, ...) FLINT_PRINTF_FOR
 }  // namespace flint
 
 // Returns FLINT_ERROR_CUDA from the calling function if a CUDA runtime call
-// fails, recording the error's name and description and where it happened.
+// fails, recording the error's name and description and where it happened. It
+// also clears the runtime's last error, or the next launch's cudaGetLastError
+// would report this failure as its own.
 #define FLINT_CUDA_CHECK(call)                                                       \
     do {                                                                             \
         const cudaError_t flint_cuda_error_ = (call);                                \
         if (flint_cuda_error_ != cudaSuccess) {                                      \
+            cudaGetLastError();                                                      \
             return ::flint::fail(FLINT_ERROR_CUDA, "%s: %s (%s:%d)",                 \
                                  cudaGetErrorName(flint_cuda_error_),                \
                                  cudaGetErrorString(flint_cuda_error_), __FILE__,    \
