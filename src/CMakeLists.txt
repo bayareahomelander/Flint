@@ -1,6 +1,7 @@
 # The Flint runtime library. It links only the static CUDA runtime: cuBLAS,
 # NVML, and PyTorch belong to the tests and benchmarks, never to this target.
 add_library(flint SHARED
+  api/bias_gradient.cpp
   api/convert.cpp
   api/copy.cpp
   api/cross_entropy.cpp
@@ -13,6 +14,7 @@ add_library(flint SHARED
   api/status.cpp
   common/checks.cpp
   common/error.cpp
+  kernels/bias_gradient.cu
   kernels/convert.cu
   kernels/copy.cu
   kernels/cross_entropy.cu

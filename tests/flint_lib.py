@@ -158,6 +158,23 @@ SIGNATURES = {
         ctypes.c_int,
         [ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)],
     ),
+    "flint_bias_gradient": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_bias_gradient_workspace": (
+        ctypes.c_int,
+        [ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)],
+    ),
     "flint_gemm_nt_batched": (
         ctypes.c_int,
         [
@@ -467,6 +484,30 @@ class Flint:
             self.lib.flint_gemm_tn(
                 pointer(y), pointer(x), pointer(w), m, n, k, int(bool(accumulate)),
                 pointer(workspace), workspace_bytes, stream_handle(stream),
+            )
+        )
+
+    def bias_gradient_workspace(self, rows: int, cols: int) -> int:
+        """The bytes of workspace bias_gradient needs for rows x cols."""
+        size = ctypes.c_size_t()
+        self.check(self.lib.flint_bias_gradient_workspace(rows, cols, ctypes.byref(size)))
+        return size.value
+
+    def bias_gradient(
+        self, dbias, dy, rows: int, cols: int, accumulate=False, workspace=None,
+        workspace_bytes=None, stream=None,
+    ) -> None:
+        """dbias = the column sums of dy, or dbias += them with accumulate, for FP32
+        dbias (cols) and FP16 dy (rows x cols). workspace_bytes defaults to a
+        workspace tensor's size, or 0."""
+        if workspace_bytes is None:
+            workspace_bytes = 0 if workspace is None or isinstance(workspace, int) else (
+                workspace.numel() * workspace.element_size()
+            )
+        self.check(
+            self.lib.flint_bias_gradient(
+                pointer(dbias), pointer(dy), rows, cols, int(bool(accumulate)), pointer(workspace),
+                workspace_bytes, stream_handle(stream),
             )
         )
 

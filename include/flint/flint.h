@@ -137,6 +137,27 @@ FLINT_API flint_status flint_gemm_tn(void* y, const void* x, const void* w, size
  * in *bytes: 0 when it needs none. It depends on the GPU's SM count. */
 FLINT_API flint_status flint_gemm_tn_workspace(size_t m, size_t n, size_t k, size_t* bytes);
 
+/* A linear layer's bias gradient, asynchronously on stream: dbias[j] is the sum
+ * over the rows of dy[r, j], for dy rows x cols FP16 (row-major, contiguous) and
+ * dbias cols FP32, all in device memory. With accumulate nonzero it adds the sums
+ * into dbias instead, with one FP32 add each, as accumulating over micro-batches
+ * needs. The sums are compensated FP32 (TwoSum), in an order that depends only on
+ * rows and cols, so the result is deterministic, and the same on every GPU. An inf
+ * or NaN in dy reaches its column's sum.
+ *
+ * cols must be a multiple of 8 up to 16,776,960, and rows from 1 to
+ * 549,755,813,632. It needs the workspace that flint_bias_gradient_workspace
+ * sizes. All pointers must be 16-byte aligned, and dbias, the workspace and dy
+ * must not overlap. The call uses the workspace until the stream has run it, so
+ * calls on other streams need their own. A cols of 0 does nothing. */
+FLINT_API flint_status flint_bias_gradient(void* dbias, const void* dy, size_t rows, size_t cols,
+                                           int accumulate, void* workspace,
+                                           size_t workspace_bytes, flint_stream stream);
+
+/* The workspace flint_bias_gradient needs for rows x cols, in bytes, in *bytes:
+ * 8 cols bytes per 256 rows, or part of them. */
+FLINT_API flint_status flint_bias_gradient_workspace(size_t rows, size_t cols, size_t* bytes);
+
 /* Runs y[j] = scale x[j] w[j]^T for batches matrices at a time in one launch,
  * asynchronously on stream, as attention's heads need. Each batch's y[j]
  * (m x n), x[j] (m x k) and w[j] (n x k) directly follow the last batch's, all

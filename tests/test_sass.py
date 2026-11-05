@@ -407,6 +407,33 @@ def test_softmax_cross_entropy_has_no_spills_or_atomics_and_moves_rows_in_16_byt
     assert any(op.startswith("SHFL") for op in opcodes(body)), name
 
 
+# The bias gradient's two kernels, by the length-prefixed names in their mangled symbols
+# (both in flint's anonymous namespace, neither a template), with the 128-bit global loads
+# each makes: the first reads dy in 16-byte pieces of 8 FP16 values, the second the FP32
+# partial sums, 4 at a time.
+BIAS_GRADIENT_KERNELS = [
+    pytest.param("22bias_gradient_partials", id="partials"),
+    pytest.param("20bias_gradient_finish", id="finish"),
+]
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+@pytest.mark.parametrize("symbol", BIAS_GRADIENT_KERNELS)
+def test_bias_gradient_kernels_have_no_spills_or_atomics_and_read_in_16_byte_chunks(arch, symbol):
+    kernels = {name: body for name, body in library_functions(arch).items() if symbol in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    assert "LDG.E.128" in body, name
+    # The extraction finds something: the first pass stores its partial sums and sums the
+    # pieces' rows through shared memory, the second adds its lanes' sums through shuffles.
+    assert any(op.startswith("STG") for op in opcodes(body)), name
+    if symbol.endswith("finish"):
+        assert any(op.startswith("SHFL") for op in opcodes(body)), name
+    else:
+        assert any(op.startswith("STS") for op in opcodes(body)), name
+
+
 # -- The batched GEMMs --------------------------------------------------------
 
 # Each batched kernel with the plain kernel of its layout, by the length-prefixed
