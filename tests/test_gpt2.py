@@ -17,9 +17,11 @@ The shapes are the tiny config at 4 shapes, three odd models (other head widths,
 block_size, a vocabulary ending mid-chunk) and GPT-2 at (2, 256), (1, 1024) and (8, 64), on
 the init and on a mid-training mix (nonzero biases, LayerNorm parameters moved), with random
 tokens and, at GPT-2 (1, 1024), real FineWeb-Edu tokens. GPT-2's whole micro-batch,
-(16, 1024), runs when the GPU has 14 GiB free (the 2080 Ti). The logits, dlogits and
-references are made and compared over chunks of rows, so GPT-2's 16,384 x 50,304 stays small.
-Every case prints its errors.
+(16, 1024), runs when the GPU has 16 GiB free (the 2080 Ti); a failed gate there is retried
+once, at another placement, and a pass on the retry is reported (gate_with_retry,
+retry_report.py), which tests on the tiny config check. The logits, dlogits and references are
+made and compared over chunks of rows, so GPT-2's 16,384 x 50,304 stays small. Every case
+prints its errors.
 
 The assembly's own tests check what a tolerance can't. The parameters' names, order and sizes
 equal gpt2_torch's. flint_gpt2_bytes equals an independent sum in Python, and the buffers of
@@ -51,6 +53,7 @@ import torch.nn.functional as F
 
 import flint_lib
 import gate
+import retry_report
 from flint_lib import Gpt2, Gpt2Config, Gpt2ParameterInfo
 from inputs import SANITIZER, SIDE_STREAM_SLEEP_CYCLES, as_int16, generator
 
@@ -67,9 +70,13 @@ FINEWEB_HEADER_BYTES = 64
 # Where the windows of real tokens start (the same as the throwaway real-weights script's).
 FINEWEB_WINDOW_START = 50_000_000
 FINEWEB_WINDOW_STRIDE = 1_000_000
-# GPT-2's micro-batch needs this much free GPU memory (it takes 5.0 GiB, and the references
-# and the peer's logits and gradients a few more).
-MICRO_BATCH_FREE_BYTES = 14 * GiB
+# GPT-2's micro-batch needs this much free GPU memory: it takes 5.0 GiB, and torch's model,
+# references and peer the rest. Measured on the 2080 Ti, a gate took 14.0 GiB and its retry,
+# with the padding below, 15.0 GiB; this leaves a margin over that.
+MICRO_BATCH_FREE_BYTES = 16 * GiB
+# A failed micro-batch gate is retried once with this much GPU memory allocated first (see
+# gate_with_retry).
+RETRY_PADDING_BYTES = 1 * GiB
 # The device memory a created and destroyed model may leave behind, as the driver reports
 # it: a shared GPU's free memory moves by tens of MiB on its own (see the leak test).
 LEAK_TOLERANCE = 128 * MiB
@@ -457,9 +464,10 @@ GATES = (("logits", gate.FORWARD_FACTOR, "fp16"), ("loss", gate.FORWARD_FACTOR, 
          ("dlogits", gate.GRADIENT_FACTOR, "fp16"))  # fmt: skip
 
 
-def check_measured(label, results):
+def check_measured(label, results, summaries=None):
     """Runs the three gates over a list of Measured (one per seed), printing the numbers
-    first; returns the bounds by quantity. Raises one AssertionError with every failed gate."""
+    first, and appending them to summaries if given; returns the bounds by quantity. Raises
+    one AssertionError with every failed gate."""
     failures, bounds, lines = [], {}, []
     for what, factor, output in GATES:
         flint_errors = [getattr(r, what)[0] for r in results]
@@ -482,16 +490,22 @@ def check_measured(label, results):
     top1 = "  top-1 vs fp32: " + ", ".join(
         f"flint {r.top1_flint:.4f} autocast {r.top1_peer:.4f}" for r in results
     )
-    print(f"GATE {label} (worst of {len(results)} seeds)\n" + "\n".join(lines) + "\n" + loss_line + "\n" + top1)
+    summary = f"GATE {label} (worst of {len(results)} seeds)\n" + "\n".join(lines) + "\n" + loss_line + "\n" + top1
+    print(summary)
+    if summaries is not None:
+        summaries.append(summary)
     assert all(r.padded_ok for r in results), f"{label}: logits or dlogits past vocab are not +0"
     assert not failures, f"{label}:\n" + "\n".join(failures)
     return bounds
 
 
-def gate_case(flint, name, sequences, length, weights, tokens, seeds=gate.SEEDS, separate=False, cfg=None):
+def gate_case(flint, name, sequences, length, weights, tokens, seeds=gate.SEEDS, separate=False, cfg=None,
+              after_forward=None, summaries=None):  # fmt: skip
     """The whole-model gate on one shape: per seed, a model (weights "init" or "mixed"),
     random or real tokens, Flint's forward pass and the torch reference and peer; then the
-    three gates over the seeds. name is a config of gpt2_torch's, unless cfg gives one."""
+    three gates over the seeds. name is a config of gpt2_torch's, unless cfg gives one.
+    after_forward(seed, m, config), if given, runs after each forward pass (the retry's tests
+    use it to corrupt an output); summaries goes to check_measured."""
     cfg = cfg or G.CONFIGS[name]
     config = gpt2_config(cfg, sequences, length, separate)
     rows = sequences * length
@@ -510,13 +524,62 @@ def gate_case(flint, name, sequences, length, weights, tokens, seeds=gate.SEEDS,
             with Gpt2(flint, config) as m:
                 m.load(state_of(model))
                 m.forward(batch.tokens, batch.target_tokens, scale)
+                if after_forward is not None:
+                    after_forward(seed, m, config)
                 results.append(
                     measure(m, config, torch_ref.reference, torch_ref.peer, batch.targets, scale, torch_ref.peer_loss)
                 )
         del model, batch, torch_ref, ids
         free_memory()
     label = f"{name} {sequences}x{length} {weights} weights, {tokens} tokens" + (", separate buffers" if separate else "")
-    return check_measured(label, results)
+    return check_measured(label, results, summaries)
+
+
+def gate_with_retry(flint, *args, record, after_forward=None, **kwargs):
+    """gate_case, retried once if its gate fails, with RETRY_PADDING_BYTES allocated first;
+    returns the bounds. When only the retry passed, it calls record (the test's record_property)
+    with retry_report.PROPERTY and a text with the first attempt's failure and the retry's
+    numbers, which retry_report.py shows even under pytest -q. If the retry fails too, raises
+    one AssertionError with both failures. Anything else than a failed gate (a skip, running out
+    of memory, a CUDA error) isn't retried. after_forward(attempt, seed, m, config), if given,
+    runs after each forward pass, with attempt 0 or 1.
+
+    Why: on the 2080 Ti this gate has failed now and then with one wrong value, one bit off,
+    that stays with a place in physical memory rather than with the data, most likely a weak
+    spot in its memory, which has no ECC. In one model a row was wrong in 15-26 of 40 passes;
+    with 1 GiB allocated before the model, the same run was wrong in 0 of 80. The retry's
+    padding moves every later allocation the same way. A failure that follows the data or the
+    kernels repeats, so it still fails; a Flint bug tied to a placement could pass on the retry,
+    which is why every retry is reported."""
+
+    def attempt(number, summaries):
+        hook = None if after_forward is None else (lambda *a: after_forward(number, *a))
+        return gate_case(flint, *args, after_forward=hook, summaries=summaries, **kwargs)
+
+    try:
+        return attempt(0, None)
+    except AssertionError as error:
+        first = str(error)
+    # Leaving the except block drops the traceback, and with it the first attempt's frames.
+    free_memory()
+    padding = torch.empty(RETRY_PADDING_BYTES, dtype=torch.uint8, device="cuda")
+    summaries = []
+    try:
+        bounds = attempt(1, summaries)
+    except AssertionError as error:
+        raise AssertionError(
+            f"the gate failed twice.\nFirst attempt:\n{first}\n"
+            f"Retry, with {RETRY_PADDING_BYTES / GiB:g} GiB allocated first:\n{error}"
+        ) from None
+    finally:
+        del padding
+        free_memory()
+    record(
+        retry_report.PROPERTY,
+        f"The first attempt failed:\n{first}\n"
+        f"The retry, with {RETRY_PADDING_BYTES / GiB:g} GiB allocated first, passed:\n" + "\n".join(summaries),
+    )
+    return bounds
 
 
 # -- 1. The whole-model gate ----------------------------------------------------------------
@@ -560,11 +623,148 @@ def test_gpt2_forward_passes_the_gate_on_real_tokens(flint, weights):
 
 
 @pytest.mark.parametrize("weights", WEIGHTS)
-def test_gpt2_micro_batch_passes_the_gate(flint, weights):
+def test_gpt2_micro_batch_passes_the_gate(flint, weights, record_property):
     free = torch.cuda.mem_get_info()[0]
     if free < MICRO_BATCH_FREE_BYTES:
         pytest.skip(f"GPT-2's (16, 1024) micro-batch needs {MICRO_BATCH_FREE_BYTES / GiB:.0f} GiB free, {free / GiB:.1f} GiB are")
-    gate_case(flint, "gpt2", 16, 1024, weights, "random")
+    gate_with_retry(flint, "gpt2", 16, 1024, weights, "random", record=record_property)
+
+
+# The retry itself, on the tiny config. A fault is made on purpose: after the forward pass,
+# one logit's lowest exponent bit flips, halving or doubling it, as the 2080 Ti's fault did
+# (0x344c read as 0x304c). On the first attempt only, it is a fault that the retry escapes;
+# on both, a bug that follows the data. These tests give gate_with_retry a Recorder in place
+# of record_property, so they never show as retried themselves.
+RETRY_CASE = ("tiny", 2, 32, "mixed", "random")
+FAULTY_SEED = 1
+# check_gate numbers the seeds by their position in the list.
+FAULTY_LINE = rf"seed {gate.SEEDS.index(FAULTY_SEED)}: flint[^\n]*FAIL"
+
+
+def flip_a_logit(m, config, row=0):
+    """Flips bit 0x0400 of the row's largest logit by magnitude, in Flint's output."""
+    logits_at, _, _ = m.outputs()
+    row_at = logits_at + row * config.padded_vocab * 2
+    values = m.read(row_at, (config.vocab,), torch.float16)
+    col = int(values.float().abs().argmax())
+    bits = values.view(torch.int16)[col : col + 1] ^ 0x0400
+    m.flint.copy(row_at + col * 2, bits, 2)
+    torch.cuda.synchronize()
+
+
+class Attempts:
+    """An after_forward hook that flips a logit of FAULTY_SEED on the given attempts and logs,
+    per call, the attempt, the seed and torch's allocated bytes (the padding is torch's)."""
+
+    def __init__(self, faulty=()):
+        self.faulty, self.calls = set(faulty), []
+
+    def __call__(self, attempt, seed, m, config):
+        self.calls.append((attempt, seed, torch.cuda.memory_allocated()))
+        if attempt in self.faulty and seed == FAULTY_SEED:
+            flip_a_logit(m, config)
+
+    def attempts(self):
+        return [c[0] for c in self.calls]
+
+    def padded(self, attempt):
+        """Whether the padding was allocated at each of the attempt's calls."""
+        return [allocated >= RETRY_PADDING_BYTES for a, _, allocated in self.calls if a == attempt]
+
+
+class Recorder(list):
+    """Stands in for record_property: keeps each (name, value)."""
+
+    def __call__(self, name, value):
+        self.append((name, value))
+
+
+def test_retry_is_not_taken_when_the_gate_passes(flint):
+    hook, recorded = Attempts(), Recorder()
+    gate_with_retry(flint, *RETRY_CASE, record=recorded, after_forward=hook)
+    assert recorded == []
+    assert hook.attempts() == [0] * len(gate.SEEDS)
+    assert not any(hook.padded(0))
+
+
+def test_a_failure_that_does_not_repeat_passes_on_the_retry(flint):
+    hook, recorded = Attempts(faulty={0}), Recorder()
+    gate_with_retry(flint, *RETRY_CASE, record=recorded, after_forward=hook)
+    assert hook.attempts() == [0] * len(gate.SEEDS) + [1] * len(gate.SEEDS)
+    # The padding is held through the whole retry, and only there.
+    assert not any(hook.padded(0)) and all(hook.padded(1))
+    assert torch.cuda.memory_allocated() < RETRY_PADDING_BYTES
+    assert len(recorded) == 1 and recorded[0][0] == retry_report.PROPERTY, recorded
+    text = recorded[0][1]
+    first, _, second = text.partition("The retry, with 1 GiB allocated first, passed:")
+    assert second, text
+    assert first.startswith("The first attempt failed") and "logits: gate factor" in first
+    assert re.search(FAULTY_LINE, first), first
+    assert "GATE tiny 2x32" in second and "FAILS" not in second
+
+
+def test_a_failure_that_repeats_on_the_retry_fails(flint):
+    hook, recorded = Attempts(faulty={0, 1}), Recorder()
+    with pytest.raises(AssertionError) as caught:
+        gate_with_retry(flint, *RETRY_CASE, record=recorded, after_forward=hook)
+    text = str(caught.value)
+    assert hook.attempts() == [0] * len(gate.SEEDS) + [1] * len(gate.SEEDS)
+    assert all(hook.padded(1))
+    assert torch.cuda.memory_allocated() < RETRY_PADDING_BYTES
+    assert recorded == []
+    first, _, second = text.partition("Retry, with 1 GiB allocated first:")
+    assert text.startswith("the gate failed twice") and second, text
+    for attempt in (first, second):
+        assert re.search(FAULTY_LINE, attempt), text
+
+
+def test_only_a_failed_gate_is_retried(flint):
+    calls, recorded = [], Recorder()
+
+    def broken(attempt, seed, m, config):
+        calls.append(attempt)
+        raise RuntimeError("not a gate failure")
+
+    with pytest.raises(RuntimeError, match="not a gate failure"):
+        gate_with_retry(flint, *RETRY_CASE, record=recorded, after_forward=broken)
+    assert calls == [0] and recorded == []
+
+
+RETRY_REPORT_TESTS = dict(
+    test_quiet="""
+def test_clean():
+    pass
+
+def test_retried(record_property):
+    record_property("gate_retry", "The first attempt failed: logits FAIL")
+""",
+    test_loud="""
+def test_retried_but_failed(record_property):
+    record_property("gate_retry", "this one failed anyway")
+    assert False
+""",
+)
+
+
+def test_a_retry_shows_in_quiet_output(pytester, pytestconfig):
+    # conftest.py registers the plugin for every run of the suite.
+    assert pytestconfig.pluginmanager.has_plugin("retry_report")
+    # precheck reads pytest -q. A passed retry counts on the last line, which turns yellow,
+    # with its text in a section above it, and the exit status stays a pass.
+    pytester.makepyfile(**RETRY_REPORT_TESTS)
+    result = pytester.runpytest("-q", "-p", "retry_report", "test_quiet.py")
+    assert result.ret == 0
+    result.stdout.fnmatch_lines(
+        [f"*{retry_report.TITLE}*", "test_quiet.py::test_retried", "The first attempt failed: logits FAIL",
+         "1 passed, 1 retried in *"]
+    )  # fmt: skip
+    assert result.parseoutcomes() == {"passed": 1, "retried": 1}
+
+    # A test that failed counts as failed, whatever it recorded.
+    result = pytester.runpytest("-q", "-p", "retry_report", "test_loud.py")
+    assert result.ret == 1
+    assert result.parseoutcomes() == {"failed": 1}
+    assert retry_report.TITLE not in result.stdout.str()
 
 
 # -- 2. The assembly ------------------------------------------------------------------------
