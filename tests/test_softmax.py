@@ -44,7 +44,7 @@ import torch.nn.functional as F
 
 import flint_lib
 import gate
-from inputs import SANITIZER, SIDE_STREAM_SLEEP_CYCLES, as_int16, generator, normal
+from inputs import SANITIZER, SIDE_STREAM_SLEEP_CYCLES, as_int16, generator, normal, round_to_half
 
 MAX_LENGTH = 1024
 MAX_BATCHES = 65_535
@@ -113,24 +113,6 @@ def reference(s, dtype=None):
 def peer(s):
     """PyTorch's FP16 softmax of the masked scores."""
     return F.softmax(s.masked_fill(~causal_mask(s.shape[-1]), -math.inf), dim=-1)
-
-
-def round_to_half(x):
-    """x (float64, from 0 to 1, no NaN) correctly rounded to FP16, ties to even. Tensor.half()
-    goes through FP32, whose rounding can differ from a single rounding at a tie; this picks
-    the nearest of the result and its two neighbours."""
-    h = x.half()
-    base = h.view(torch.int16)
-    best_bits, best_error = base.clone(), (x - h.double()).abs()
-    for delta in (-1, 1):
-        candidate = (base.int() + delta).clamp(0, 0x7BFF).to(torch.int16)
-        error = (x - candidate.view(torch.float16).double()).abs()
-        take = (error < best_error) | (
-            (error == best_error) & ((candidate & 1) == 0) & ((best_bits & 1) == 1)
-        )
-        best_bits = torch.where(take, candidate, best_bits)
-        best_error = torch.where(take, error, best_error)
-    return best_bits.view(torch.float16)
 
 
 def batch_chunks(b, t):

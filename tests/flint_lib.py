@@ -241,6 +241,20 @@ SIGNATURES = {
             ctypes.c_void_p,
         ],
     ),
+    "flint_softmax_cross_entropy": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_float,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
 }
 
 
@@ -494,5 +508,20 @@ class Flint:
         self.check(
             self.lib.flint_causal_softmax_forward(
                 pointer(p), pointer(s), batches, length, stream_handle(stream)
+            )
+        )
+
+    def softmax_cross_entropy(
+        self, dlogits, row_loss, logits, targets, scale: float, rows: int, vocab: int, cols: int,
+        stream=None,
+    ) -> None:
+        """Each row's cross-entropy (row_loss, FP32) and logit gradient (dlogits,
+        FP16 rows x cols) from FP16 logits and uint16 targets, over its first
+        vocab columns; dlogits is +0 in the rest, and scale * (p - one-hot) there.
+        Targets must be below vocab; the function doesn't check."""
+        self.check(
+            self.lib.flint_softmax_cross_entropy(
+                pointer(dlogits), pointer(row_loss), pointer(logits), pointer(targets), scale, rows,
+                vocab, cols, stream_handle(stream),
             )
         )

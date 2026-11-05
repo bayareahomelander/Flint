@@ -272,6 +272,47 @@ FLINT_API flint_status flint_heads_merge(void* y, const void* x, size_t batches,
 FLINT_API flint_status flint_causal_softmax_forward(void* p, const void* s, size_t batches,
                                                     size_t length, flint_stream stream);
 
+/* The output layer's softmax and cross-entropy in one kernel, asynchronously on
+ * stream. logits and dlogits are rows x cols FP16, row-major and contiguous,
+ * targets holds rows uint16 tokens and row_loss rows FP32, all in device memory.
+ * Only a row's first vocab columns count. With max the largest of those logits,
+ * sum adding exp(logits[r, c] - max) over them, and p[r, c] = exp(logits[r, c] -
+ * max) / sum:
+ *
+ *   row_loss[r] = log(sum) - (logits[r, targets[r]] - max)
+ *   dlogits[r, c] = scale * (p[r, c] - 1), for c = targets[r]
+ *   dlogits[r, c] = scale * p[r, c], for the other c below vocab
+ *
+ * Everything is computed in FP32, and each dlogits value rounds to FP16 once, to
+ * nearest, so small gradients can round to subnormals or 0 and large ones to an
+ * inf. dlogits[r, c] is +0 for c at or above vocab, and logits' values there are
+ * ignored, even an inf or NaN (they must still be initialized). Each row's result
+ * depends only on its own logits, its target, vocab and scale, and is
+ * deterministic.
+ *
+ * row_loss holds one row's cross-entropy each, for the caller to add up. dlogits
+ * is the gradient of scale times their sum, so for a mean loss over a step's
+ * tokens with a loss scale, scale is the loss scale over the tokens.
+ *
+ * A NaN or +inf among a row's first vocab logits gives NaN in its row_loss and in
+ * those columns of dlogits, and so does a row whose vocab logits are all -inf. A
+ * -inf among finite logits gets a p of 0, and if it is the target's, a row_loss
+ * of +inf. A NaN's own bits aren't promised.
+ *
+ * Targets must be below vocab; checking would need a wait on the GPU, so the
+ * function doesn't. A target at or above vocab reads and writes nothing outside
+ * the buffers, but its row's row_loss may stay unwritten and its dlogits are
+ * unspecified.
+ *
+ * cols must be a multiple of 8 from 8 to 65,536, vocab from 1 to cols, rows up to
+ * 17,179,869,176, and scale finite. All four pointers must be 16-byte aligned,
+ * and neither output may overlap the other or an input. A rows of 0 does
+ * nothing. */
+FLINT_API flint_status flint_softmax_cross_entropy(void* dlogits, void* row_loss,
+                                                   const void* logits, const void* targets,
+                                                   float scale, size_t rows, size_t vocab,
+                                                   size_t cols, flint_stream stream);
+
 #ifdef __cplusplus
 }
 #endif

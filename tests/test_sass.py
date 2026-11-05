@@ -390,6 +390,23 @@ def test_causal_softmax_has_no_spills_or_atomics_and_moves_rows_in_16_byte_chunk
     assert any(op.startswith("SHFL") for op in opcodes(body)), name
 
 
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+def test_softmax_cross_entropy_has_no_spills_or_atomics_and_moves_rows_in_16_byte_chunks(arch):
+    # "21softmax_cross_entropy" is the kernel's own name, length-prefixed in the mangled
+    # name; it is not a template, so there is one instance. (The C API function that
+    # launches it, flint_softmax_cross_entropy, is not a kernel, and is not in the SASS.)
+    kernels = {name: body for name, body in library_functions(arch).items()
+               if "21softmax_cross_entropy" in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    # Each lane loads and stores a row's 16-byte chunks, and the max and the compensated sum
+    # reach every lane through the warp's shuffles.
+    assert "LDG.E.128" in body, name
+    assert "STG.E.128" in body, name
+    assert any(op.startswith("SHFL") for op in opcodes(body)), name
+
+
 # -- The batched GEMMs --------------------------------------------------------
 
 # Each batched kernel with the plain kernel of its layout, by the length-prefixed

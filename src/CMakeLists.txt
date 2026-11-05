@@ -3,6 +3,7 @@
 add_library(flint SHARED
   api/convert.cpp
   api/copy.cpp
+  api/cross_entropy.cpp
   api/embedding.cpp
   api/gemm.cpp
   api/heads.cpp
@@ -13,6 +14,7 @@ add_library(flint SHARED
   common/error.cpp
   kernels/convert.cu
   kernels/copy.cu
+  kernels/cross_entropy.cu
   kernels/embedding.cu
   kernels/gemm.cu
   kernels/heads.cu
