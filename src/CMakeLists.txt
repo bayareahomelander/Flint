@@ -22,6 +22,7 @@ add_library(flint SHARED
   kernels/gemm.cu
   kernels/heads.cu
   kernels/layernorm.cu
+  kernels/layernorm_backward.cu
   kernels/softmax.cu
 )
 target_include_directories(flint

@@ -212,6 +212,39 @@ FLINT_API flint_status flint_layernorm_forward(void* y, void* mean, void* rstd, 
                                                const void* gamma, const void* beta, size_t rows,
                                                size_t cols, float eps, flint_stream stream);
 
+/* LayerNorm's backward pass, asynchronously on stream. dy (rows x cols FP16) is the
+ * gradient of the forward pass's y; x (rows x cols FP32), mean and rstd (rows FP32
+ * values each) are the forward pass's input and statistics, and gamma holds cols FP32
+ * values. With xhat = (x - mean) * rstd and g = dy * gamma, it computes
+ *   dx = rstd * (g - mean(g) - xhat * mean(g * xhat)),
+ * with both means over the row, rows x cols FP32; dgamma, the column sums of
+ * dy * xhat; and dbeta, the column sums of dy, cols FP32 values each. With
+ * accumulate_dx nonzero it adds dx into dx's old values instead, with one FP32 add
+ * each, as the residual stream's gradient needs; with accumulate_params nonzero it adds
+ * dgamma and dbeta into theirs, as accumulating over micro-batches needs. Everything is
+ * computed in FP32, with compensated (TwoSum) column sums for dgamma and dbeta, in an
+ * order that depends only on rows and cols, so the result is deterministic, and the
+ * same on every GPU. dbeta is exactly what flint_bias_gradient gives for dy. An inf or
+ * NaN in an input reaches the outputs that depend on it.
+ *
+ * cols must be a multiple of 8 from 8 to 16,776,960, narrower than the forward pass
+ * allows, and rows from 1 to 17,179,869,176. It needs the workspace that
+ * flint_layernorm_backward_workspace sizes. All pointers must be 16-byte aligned, and
+ * dx, dgamma, dbeta and the workspace must not overlap each other or the inputs. The
+ * call uses the workspace until the stream has run it, so calls on other streams need
+ * their own. */
+FLINT_API flint_status flint_layernorm_backward(void* dx, void* dgamma, void* dbeta,
+                                                const void* dy, const void* x, const void* mean,
+                                                const void* rstd, const void* gamma, size_t rows,
+                                                size_t cols, int accumulate_dx,
+                                                int accumulate_params, void* workspace,
+                                                size_t workspace_bytes, flint_stream stream);
+
+/* The workspace flint_layernorm_backward needs for rows x cols, in bytes, in *bytes:
+ * flint_bias_gradient_workspace's size, so one workspace can serve both. */
+FLINT_API flint_status flint_layernorm_backward_workspace(size_t rows, size_t cols,
+                                                          size_t* bytes);
+
 /* The embedding's forward pass, asynchronously on stream. tokens holds
  * sequences * length uint16 values, one per row of x, sequence after sequence;
  * wte is the word table (vocab x width FP32) and wpe the position table (at

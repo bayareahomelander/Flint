@@ -230,6 +230,30 @@ SIGNATURES = {
             ctypes.c_void_p,
         ],
     ),
+    "flint_layernorm_backward": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_layernorm_backward_workspace": (
+        ctypes.c_int,
+        [ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)],
+    ),
     "flint_embedding_forward": (
         ctypes.c_int,
         [
@@ -553,6 +577,35 @@ class Flint:
             self.lib.flint_layernorm_forward(
                 pointer(y), pointer(mean), pointer(rstd), pointer(x), pointer(gamma),
                 pointer(beta), rows, cols, eps, stream_handle(stream),
+            )
+        )
+
+    def layernorm_backward_workspace(self, rows: int, cols: int) -> int:
+        """The bytes of workspace layernorm_backward needs for rows x cols."""
+        size = ctypes.c_size_t()
+        self.check(self.lib.flint_layernorm_backward_workspace(rows, cols, ctypes.byref(size)))
+        return size.value
+
+    def layernorm_backward(
+        self, dx, dgamma, dbeta, dy, x, mean, rstd, gamma, rows: int, cols: int,
+        accumulate_dx=False, accumulate_params=False, workspace=None, workspace_bytes=None,
+        stream=None,
+    ) -> None:
+        """LayerNorm's backward pass: dx (rows x cols FP32), dgamma and dbeta (cols FP32
+        each) from dy (rows x cols FP16), x (rows x cols FP32), the forward pass's mean
+        and rstd (rows FP32 each) and gamma (cols FP32). accumulate_dx adds dx into dx,
+        accumulate_params adds dgamma and dbeta into theirs. workspace_bytes defaults
+        to a workspace tensor's size, or 0."""
+        if workspace_bytes is None:
+            workspace_bytes = 0 if workspace is None or isinstance(workspace, int) else (
+                workspace.numel() * workspace.element_size()
+            )
+        self.check(
+            self.lib.flint_layernorm_backward(
+                pointer(dx), pointer(dgamma), pointer(dbeta), pointer(dy), pointer(x),
+                pointer(mean), pointer(rstd), pointer(gamma), rows, cols,
+                int(bool(accumulate_dx)), int(bool(accumulate_params)), pointer(workspace),
+                workspace_bytes, stream_handle(stream),
             )
         )
 

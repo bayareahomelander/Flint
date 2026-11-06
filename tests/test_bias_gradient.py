@@ -293,7 +293,22 @@ def emulate(dy, old=None, y_order=Y_ORDER, reverse_chunks=False, butterfly=BUTTE
                 k = len(piece)
                 s[0, :k], e[0, :k] = two_sum_add(s[0, :k], e[0, :k], piece)
             partial_s[full], partial_e[full] = (v[0] for v in thread_merges(s, e, threads))
-        # Pass 2: lane l merges chunks l, l + 32, ... in order (backwards with reverse_chunks).
+        total = pass2(partial_s, partial_e, old, reverse_chunks, butterfly)
+    if with_partials:
+        return total, partial_s, partial_e
+    return total
+
+
+def pass2(partial_s, partial_e, old=None, reverse_chunks=False, butterfly=BUTTERFLY):
+    """The second pass of the kernels on pass 1's partial sums and errors (float32 numpy
+    arrays, chunks x cols each): the total per column as a float32 array, or with old (cols
+    FP32), old + the total, with one add. Lane l merges chunks l, l + 32, ... in order (backwards
+    with reverse_chunks), then the butterfly merges the lanes (in the order of the offsets
+    given); a lane without chunks holds (+0, +0), left out of the merges as in emulate. The value
+    is s + e, or s alone when it is inf or NaN. LayerNorm's backward pass reuses it for dgamma."""
+    chunks, cols = partial_s.shape
+    f32 = np.float32
+    with np.errstate(all="ignore"):
         lanes = min(32, chunks)
         groups = chunks // 32
         rem = chunks - groups * 32
@@ -329,8 +344,6 @@ def emulate(dy, old=None, y_order=Y_ORDER, reverse_chunks=False, butterfly=BUTTE
         total = np.where(np.isfinite(s), s + e, s).astype(f32)
         if old is not None:
             total = np.asarray(old, dtype=f32) + total
-    if with_partials:
-        return total, partial_s, partial_e
     return total
 
 
@@ -525,14 +538,15 @@ def differing_columns(a, b):
 
 
 def test_the_bit_exact_tests_tell_plain_sums_from_compensated_ones():
-    # What the bit-exact comparisons can see. Compensated sums are nearly correctly rounded, so a
-    # different order of the same compensated merges (the threads' merges backwards, a lane's
-    # chunks backwards, the butterfly's offsets reversed) changes the rounded sum s but not
-    # s + e, and gives the same bits in (nearly) every column: those orders are pinned by the
-    # emulation matching the scalar transcription and by the kernel's design, not by the bits.
-    # What the bits do pin is the compensation: plain FP32 sums, in the same order, or torch's own
-    # sum, differ in most columns. The counts are of the 768 columns of 16384 CPU-generated rows
-    # (FP16 magnitudes 2^-6 to 2^6 around N(0, 1)), printed for the record.
+    # What the bit-exact comparisons can see on an ordinary input. Compensated sums are nearly
+    # correctly rounded, so a different order of the same compensated merges (the threads' merges
+    # backwards, a lane's chunks backwards, the butterfly's offsets reversed) changes the rounded
+    # sum s but not s + e, and gives the same bits in (nearly) every column: the totals don't pin
+    # those orders. Pass 1's partial sums do (test_the_partials_tell_the_order_of_the_thread_
+    # merges_apart), and crafted inputs pin pass 2's (test_crafted_inputs_tell_the_orders_of_pass_
+    # 2_apart). What the bits pin here is the compensation: plain FP32 sums, in the same order, or
+    # torch's own sum, differ in most columns. The counts are of the 768 columns of 16384
+    # CPU-generated rows (FP16 magnitudes 2^-6 to 2^6 around N(0, 1)), printed for the record.
     dy = cpu_dy(16384, 768, 3)
     kernel = emulate(dy)
     variants = {
@@ -571,7 +585,7 @@ def test_the_workspaces_partials_equal_the_emulations_bit_for_bit(flint, rows, c
     # test_the_bit_exact_tests_tell_plain_sums_from_compensated_ones), so it can't show the order
     # of the additions. Pass 1's rounded partial sums can: they pin the order of each thread's
     # rows and of the 8 threads' merges, and the workspace's layout. Pass 2's order, a lane's
-    # chunks and the butterfly, is pinned only by the design and the scalar transcription.
+    # chunks and the butterfly, is pinned by the crafted inputs below.
     dy = cpu_dy(rows, cols, 14)
 
     _, partials = run_flint(flint, dy.cuda(), with_workspace=True)
@@ -591,6 +605,116 @@ def test_the_partials_tell_the_order_of_the_thread_merges_apart():
     differ = int((canonical(torch.from_numpy(sums)) != canonical(torch.from_numpy(reversed_sums))).sum())
     print(f"ORDER partial sums differing with the thread merges reversed: {differ} of {sums.size}")
     assert differ > 100
+
+
+# -- Pass 2's order, on crafted inputs -------------------------------------------
+# On ordinary inputs the compensated total is the correctly rounded sum whatever the order of pass
+# 2's merges, so the bits can't show that order. They can when the errors' own plain FP32 sums
+# round: when chunks' sums near 2^24 add to values that round (TwoSum errors of 1 or 2) while other
+# errors are near 2^-24, so an error sum spans more than 24 bits, and the chunks' sums cancel, so
+# the total is made of the errors. The total is then not always correctly rounded, and which way
+# it misses depends on the order. LayerNorm's backward pass reuses these inputs for dgamma, whose
+# second pass is this one.
+
+# 128 chunks, 4 to a lane.
+CRAFTED_SHAPE = (128 * CHUNK_ROWS, 32)
+CRAFTED_SEED = 31
+
+
+def crafted_cancellation(rows, cols, seed):
+    """dy (rows x cols FP16, on the CPU, from a seeded torch generator, so the same on every
+    machine) whose column sums show the order of pass 2. Each column pairs up its chunks at
+    random, and the two chunks of a pair hold opposite values, so the chunks' sums cancel exactly:
+    every row holds one big value from 60,000 to 65,504 (a chunk's sum is near 2^24, and two
+    chunks' sums of one sign add to a value that rounds), but for one row of an odd integer below
+    1,024 (so the sums are odd). Then every chunk gets one value of FP16's subnormal range in a
+    random row, which pass 1 loses into the error (errors near 2^-24). A chunk left without a
+    partner holds only that value. Each column's draws follow the last's, so the first columns of
+    a wider input are those of a narrower one."""
+    g = torch.Generator().manual_seed(seed)
+    chunks = -(-rows // CHUNK_ROWS)
+
+    def draw(low, high):
+        return int(torch.randint(low, high, (1,), generator=g))
+
+    dy = torch.zeros(rows, cols, dtype=torch.float16)
+    for j in range(cols):
+        order = torch.randperm(chunks, generator=g).tolist()
+        for k in range(0, chunks - 1, 2):
+            a, b = order[k], order[k + 1]
+            n = min(CHUNK_ROWS, rows - a * CHUNK_ROWS, rows - b * CHUNK_ROWS)
+            big = float(60000 + draw(0, 5505))
+            odd = float(2 * draw(0, 512) + 1)
+            sign = 1.0 if draw(0, 2) else -1.0
+            for c, s in ((a, sign), (b, -sign)):
+                dy[c * CHUNK_ROWS : c * CHUNK_ROWS + n, j] = s * big
+                dy[c * CHUNK_ROWS + draw(0, n), j] = s * odd
+        for c in range(chunks):
+            n = min(CHUNK_ROWS, rows - c * CHUNK_ROWS)
+            dy[c * CHUNK_ROWS + draw(0, n), j] = draw(1, 1024) * 2.0**-24 * (1.0 if draw(0, 2) else -1.0)
+    return dy
+
+
+def pass2_with_lanes(partial_s, partial_e, lanes):
+    """pass2 with lane l merging the chunks lanes[l] (a list of 32 lists) in that order, then the
+    kernel's butterfly: to show what the bits can tell apart."""
+    with np.errstate(all="ignore"):
+        lane = []
+        for chunks in lanes:
+            a = None
+            for c in chunks:
+                b = (partial_s[c], partial_e[c])
+                a = b if a is None else two_sum_merge(a, b)
+            lane.append(a)
+        for offset in BUTTERFLY:
+            nxt = []
+            for l in range(32):
+                a, b = lane[l], lane[l ^ offset]
+                nxt.append(b if a is None else a if b is None else two_sum_merge(a, b))
+            lane = nxt
+        s, e = lane[0]
+        return np.where(np.isfinite(s), s + e, s).astype(np.float32)
+
+
+def pass2_orders(partial_s, partial_e):
+    """The kernel's pass 2 and three other orders of it, by name."""
+    chunks = partial_s.shape[0]
+    return {
+        "the kernel's": pass2(partial_s, partial_e),
+        "the kernel's lanes, merged by pass2_with_lanes": pass2_with_lanes(
+            partial_s, partial_e, [list(range(l, chunks, 32)) for l in range(32)]),
+        "each lane's chunks in reverse": pass2(partial_s, partial_e, reverse_chunks=True),
+        "the butterfly's offsets 1, 2, 4, 8, 16": pass2(partial_s, partial_e, butterfly=(1, 2, 4, 8, 16)),
+        "lane l merging chunks in a contiguous run": pass2_with_lanes(
+            partial_s, partial_e, [[c for c in range(chunks) if c * 32 // chunks == l] for l in range(32)]),
+    }
+
+
+def test_crafted_inputs_tell_the_orders_of_pass_2_apart():
+    # On the crafted input, each other order of pass 2 changes the total in several columns, so the
+    # bit-exact test below pins pass 2's order: a lane's chunks (l, l + 32, ... in order) and the
+    # butterfly's offsets (16 down to 1). The counts are printed for the record.
+    dy = crafted_cancellation(*CRAFTED_SHAPE, CRAFTED_SEED)
+    _, sums, errors = emulate(dy, with_partials=True)
+    orders = pass2_orders(sums, errors)
+    kernel = orders.pop("the kernel's")
+    rounded = differing_columns(kernel, dy.double().sum(0).float().numpy())
+    print(f"ORDER crafted: {rounded} of {CRAFTED_SHAPE[1]} columns not correctly rounded")
+    assert differing_columns(kernel, orders.pop("the kernel's lanes, merged by pass2_with_lanes")) == 0
+    for name, other in orders.items():
+        count = differing_columns(kernel, other)
+        print(f"ORDER crafted {name}: {count} of {CRAFTED_SHAPE[1]} columns differ")
+        assert count >= 4, name
+
+
+def test_dbias_equals_the_emulation_on_the_crafted_inputs(flint):
+    # Under the sanitizer, the first 8 columns of the same input.
+    rows, cols = CRAFTED_SHAPE[0], 8 if SANITIZER else CRAFTED_SHAPE[1]
+    dy = crafted_cancellation(rows, cols, CRAFTED_SEED)
+
+    got = run_flint(flint, dy.cuda())
+
+    assert_same_bits(got, emulate(dy), f"dbias crafted {rows}x{cols}")
 
 
 @pytest.mark.parametrize("rows, cols", shape_params(EXACT_SHAPES))

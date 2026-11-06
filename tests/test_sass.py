@@ -1,6 +1,7 @@
 """The mma kernels compile to FP32-accumulate tensor-core instructions."""
 
 import importlib.util
+import re
 import sys
 
 import pytest
@@ -429,6 +430,54 @@ def test_bias_gradient_kernels_have_no_spills_or_atomics_and_read_in_16_byte_chu
     # pieces' rows through shared memory, the second adds its lanes' sums through shuffles.
     assert any(op.startswith("STG") for op in opcodes(body)), name
     if symbol.endswith("finish"):
+        assert any(op.startswith("SHFL") for op in opcodes(body)), name
+    else:
+        assert any(op.startswith("STS") for op in opcodes(body)), name
+
+
+# LayerNorm's backward pass has two kernels of its own (dgamma's second pass and dbeta are the bias
+# gradient's, tested above), by the length-prefixed names in their mangled symbols, both in flint's
+# anonymous namespace and neither a template: dx, a warp to a row, and dgamma's first pass.
+LAYERNORM_BACKWARD_KERNELS = [
+    pytest.param("21layernorm_backward_dx", id="dx"),
+    pytest.param("34layernorm_backward_dgamma_partials", id="dgamma_partials"),
+]
+
+
+def flushing_instructions(body):
+    """The (address, text) of the kernel's instructions with a .FTZ modifier that are not in the
+    out-of-line slow path of an IEEE division. dx's division (__fdiv_rn) is a fast path guarded by
+    FCHK and, for operands it can't take (zero, inf, NaN, subnormal), a call to a compiler-generated
+    routine placed after the kernel's last EXIT: that routine scales its operands and uses FTZ
+    instructions on the scaled, normal values, and its quotient is the correctly rounded one
+    whatever the operands (the bit-exact tests with subnormal values show it). Every instruction
+    below the lowest call target is the kernel's own."""
+    code = sass_loop.instructions(body)
+    targets = [int(m.group(1), 16) for _, text, _, _ in code
+               if (m := re.search(r"CALL\.REL\.NOINC\s+(0x[0-9a-f]+)", text))]
+    routine = min(targets) if targets else None
+    return [(address, text) for address, text, _, _ in code
+            if ".FTZ" in text and (routine is None or address < routine)]
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+@pytest.mark.parametrize("symbol", LAYERNORM_BACKWARD_KERNELS)
+def test_layernorm_backward_kernels_have_no_spills_atomics_or_flushing_and_read_in_16_byte_chunks(arch, symbol):
+    kernels = {name: body for name, body in library_functions(arch).items() if symbol in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    # The results are bit-exact against a float32 emulation, which has subnormals: no instruction
+    # of the kernel may flush them to zero. dgamma's first pass has no FTZ anywhere; dx's only ones
+    # are in its division's slow path (see flushing_instructions).
+    assert not flushing_instructions(body), name
+    if symbol.endswith("dgamma_partials"):
+        assert ".FTZ" not in body, name
+    assert "LDG.E.128" in body, name
+    # The extraction finds something: dx adds its lanes' sums through shuffles and stores its row,
+    # the first pass sums the pieces' rows through shared memory and stores its partial sums.
+    assert any(op.startswith("STG") for op in opcodes(body)), name
+    if symbol.endswith("dx"):
         assert any(op.startswith("SHFL") for op in opcodes(body)), name
     else:
         assert any(op.startswith("STS") for op in opcodes(body)), name

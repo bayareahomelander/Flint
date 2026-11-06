@@ -33,4 +33,11 @@ constexpr size_t bias_gradient_workspace(size_t rows, size_t cols) {
 cudaError_t launch_bias_gradient(void* dbias, const void* dy, size_t rows, size_t cols,
                                  bool accumulate, void* workspace, cudaStream_t stream);
 
+// Launches the second pass alone on stream: merges the partial sums a first pass left
+// in workspace, in the layout above, for rows x cols, into dbias (cols FP32), or adds
+// them to it with accumulate. LayerNorm's dgamma uses it with partial sums of its own.
+// Expects launch_bias_gradient's conditions. Returns the launch error, if any.
+cudaError_t launch_bias_gradient_finish(void* dbias, const void* workspace, size_t rows,
+                                        size_t cols, bool accumulate, cudaStream_t stream);
+
 }  // namespace flint

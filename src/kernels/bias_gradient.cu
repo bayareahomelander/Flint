@@ -120,8 +120,10 @@ __global__ void __launch_bounds__(kTileX * kTileY)
 
 // The sum's value: sum + error. A non-finite sum is the value itself: once an inf has
 // passed through TwoSum, its error is inf - inf = NaN, which would turn a +inf column
-// into NaN. A finite sum always has a finite error, since sums of FP16 values stay far
-// below FP32's overflow.
+// into NaN. A finite sum has a finite error when the sums stay far below FP32's
+// overflow, as sums of FP16 values do, and LayerNorm's dgamma does with the forward
+// pass's statistics (|xhat| is at most sqrt(cols)). Inputs that bring partial sums near
+// FP32's largest value could overflow the errors' plain sum alone, and give inf or NaN.
 __device__ float value(const CompensatedSum& a) {
     return isfinite(a.sum) ? a.sum + a.error : a.sum;
 }
@@ -188,6 +190,12 @@ cudaError_t launch_bias_gradient(void* dbias, const void* dy, size_t rows, size_
     if (const cudaError_t error = cudaGetLastError(); error != cudaSuccess) {
         return error;
     }
+    return launch_bias_gradient_finish(dbias, workspace, rows, cols, accumulate, stream);
+}
+
+cudaError_t launch_bias_gradient_finish(void* dbias, const void* workspace, size_t rows,
+                                        size_t cols, bool accumulate, cudaStream_t stream) {
+    const size_t chunks = (rows + kBiasGradientChunkRows - 1) / kBiasGradientChunkRows;
     const auto quads = static_cast<int>(cols / kFinishCols);
     const auto blocks = static_cast<unsigned>((quads + kFinishWarps - 1) / kFinishWarps);
     bias_gradient_finish<<<blocks, kWarp * kFinishWarps, 0, stream>>>(
