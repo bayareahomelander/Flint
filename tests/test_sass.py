@@ -392,6 +392,29 @@ def test_causal_softmax_has_no_spills_or_atomics_and_moves_rows_in_16_byte_chunk
 
 
 @pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+def test_causal_softmax_backward_has_no_spills_atomics_or_flushing_and_moves_rows_in_16_byte_chunks(arch):
+    # "23causal_softmax_backward" is the kernel's own name, length-prefixed in the mangled
+    # name (in flint's anonymous namespace); it is not a template, so there is one instance.
+    kernels = {name: body for name, body in library_functions(arch).items()
+               if "23causal_softmax_backward" in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    # The results are bit-exact against a float32 emulation, which has subnormals: no
+    # floating-point instruction of the kernel may flush them to zero. The one .FTZ in the
+    # kernel is the F2I of the integer division behind `row % length` (its reciprocal
+    # estimate, on a row index, not on data), so conversions to integers are the exception.
+    flushing = [text for _, text, _, _ in instructions(body)
+                if ".FTZ" in text and not sass_loop.PREDICATE.sub("", text).split()[0].startswith("F2I")]
+    assert not flushing, (name, flushing)
+    # Each lane loads and stores a row's 16-byte chunks, and the compensated sum's pairs reach
+    # every lane through the warp's shuffles.
+    assert "LDG.E.128" in body, name
+    assert "STG.E.128" in body, name
+    assert any(op.startswith("SHFL") for op in opcodes(body)), name
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
 def test_softmax_cross_entropy_has_no_spills_or_atomics_and_moves_rows_in_16_byte_chunks(arch):
     # "21softmax_cross_entropy" is the kernel's own name, length-prefixed in the mangled
     # name; it is not a template, so there is one instance. (The C API function that

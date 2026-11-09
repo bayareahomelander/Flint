@@ -24,6 +24,7 @@ add_library(flint SHARED
   kernels/layernorm.cu
   kernels/layernorm_backward.cu
   kernels/softmax.cu
+  kernels/softmax_backward.cu
 )
 target_include_directories(flint
   PUBLIC ${PROJECT_SOURCE_DIR}/include

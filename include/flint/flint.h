@@ -326,6 +326,29 @@ FLINT_API flint_status flint_heads_merge(void* y, const void* x, size_t batches,
 FLINT_API flint_status flint_causal_softmax_forward(void* p, const void* s, size_t batches,
                                                     size_t length, flint_stream stream);
 
+/* Attention's causal softmax, backward, asynchronously on stream. p (the forward
+ * pass's output), dp (its gradient) and ds are batches x length x length FP16, laid out
+ * as for flint_causal_softmax_forward. For row t of a batch, with D the sum of
+ * p[b, t, c] * dp[b, t, c] over its visible columns c <= t,
+ * ds[b, t, c] = scale * p[b, t, c] * (dp[b, t, c] - D) for c <= t, and +0 for c > t,
+ * whatever p and dp hold there (they must still be initialized). scale carries the
+ * scores' own scale (1/8 for GPT-2's heads of 64), so the gradient GEMMs that follow
+ * need none. Everything is computed in FP32: each product p * dp is exact, D is a
+ * compensated (TwoSum) sum, and each output subtracts D's rounded sum and then its
+ * error, so where dp is close to D the difference keeps its bits. Each output rounds
+ * to FP16 once, to nearest, so a value past FP16's range gives inf. The
+ * order of the additions depends only on t, so each row's result is deterministic and
+ * the same on every GPU. A visible inf or NaN reaches the row's outputs as it does in
+ * FP32 arithmetic. A NaN's own bits aren't promised.
+ *
+ * length must be a multiple of 8 up to 1,024, batches can be up to 65,535, and scale
+ * must be finite. All pointers must be 16-byte aligned. ds may be dp itself, computing
+ * in place; otherwise it must not overlap dp, and it must never overlap p. A batches or
+ * length of 0 does nothing. */
+FLINT_API flint_status flint_causal_softmax_backward(void* ds, const void* p, const void* dp,
+                                                     size_t batches, size_t length, float scale,
+                                                     flint_stream stream);
+
 /* The output layer's softmax and cross-entropy in one kernel, asynchronously on
  * stream. logits and dlogits are rows x cols FP16, row-major and contiguous,
  * targets holds rows uint16 tokens and row_loss rows FP32, all in device memory.

@@ -310,6 +310,18 @@ SIGNATURES = {
             ctypes.c_void_p,
         ],
     ),
+    "flint_causal_softmax_backward": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_float,
+            ctypes.c_void_p,
+        ],
+    ),
     "flint_softmax_cross_entropy": (
         ctypes.c_int,
         [
@@ -662,6 +674,17 @@ class Flint:
         self.check(
             self.lib.flint_causal_softmax_forward(
                 pointer(p), pointer(s), batches, length, stream_handle(stream)
+            )
+        )
+
+    def causal_softmax_backward(self, ds, p, dp, batches: int, length: int, scale=0.125,
+                                stream=None) -> None:
+        """dS from P and dP, all FP16 batches x length x length: row t of a batch gets
+        scale * p * (dp - D) in its columns 0 to t, with D the FP32 sum of p * dp over
+        them, rounded to FP16 once, and +0 in the rest. ds may be dp itself."""
+        self.check(
+            self.lib.flint_causal_softmax_backward(
+                pointer(ds), pointer(p), pointer(dp), batches, length, scale, stream_handle(stream)
             )
         )
 
