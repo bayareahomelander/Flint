@@ -19,6 +19,7 @@ add_library(flint SHARED
   kernels/copy.cu
   kernels/cross_entropy.cu
   kernels/embedding.cu
+  kernels/embedding_backward.cu
   kernels/gemm.cu
   kernels/heads.cu
   kernels/layernorm.cu

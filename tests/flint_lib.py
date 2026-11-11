@@ -268,6 +268,34 @@ SIGNATURES = {
             ctypes.c_void_p,
         ],
     ),
+    "flint_embedding_backward": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_embedding_backward_workspace": (
+        ctypes.c_int,
+        [
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_size_t),
+        ],
+    ),
     "flint_fp32_to_fp16": (
         ctypes.c_int,
         [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p],
@@ -632,6 +660,40 @@ class Flint:
             self.lib.flint_embedding_forward(
                 pointer(x), pointer(tokens), pointer(wte), pointer(wpe), sequences, length, vocab,
                 width, stream_handle(stream),
+            )
+        )
+
+    def embedding_backward_workspace(
+        self, sequences: int, length: int, vocab: int, width: int
+    ) -> int:
+        """The bytes of workspace embedding_backward needs."""
+        size = ctypes.c_size_t()
+        self.check(
+            self.lib.flint_embedding_backward_workspace(
+                sequences, length, vocab, width, ctypes.byref(size)
+            )
+        )
+        return size.value
+
+    def embedding_backward(
+        self, dwte, dwpe, dx, tokens, sequences: int, length: int, vocab: int, width: int,
+        accumulate_wte=False, accumulate_wpe=False, workspace=None, workspace_bytes=None,
+        stream=None,
+    ) -> None:
+        """The embedding's backward pass: dwte[v] (vocab x width FP32) = the sum of dx[r]
+        over the rows whose token is v, and dwpe[t] (the first length rows, FP32) = the
+        sum of dx[s * length + t] over the sequences, from dx ((sequences * length) x
+        width FP32) and uint16 tokens. accumulate_wte and accumulate_wpe add into the old
+        values instead. workspace_bytes defaults to a workspace tensor's size, or 0."""
+        if workspace_bytes is None:
+            workspace_bytes = 0 if workspace is None or isinstance(workspace, int) else (
+                workspace.numel() * workspace.element_size()
+            )
+        self.check(
+            self.lib.flint_embedding_backward(
+                pointer(dwte), pointer(dwpe), pointer(dx), pointer(tokens), sequences, length,
+                vocab, width, int(bool(accumulate_wte)), int(bool(accumulate_wpe)),
+                pointer(workspace), workspace_bytes, stream_handle(stream),
             )
         )
 

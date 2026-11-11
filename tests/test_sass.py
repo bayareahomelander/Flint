@@ -581,3 +581,50 @@ def test_gemm_nt_batched_scales_in_fp32_before_it_converts(arch):
     # outputs.
     assert after.count("FMUL") == 64, name
     assert not [op for op in after if op.split(".")[0] in ("HMUL2", "HADD2")], name
+
+
+# -- The embedding's backward pass ----------------------------------------------------------------
+
+# Its six kernels, by the length-prefixed names in their mangled symbols (all in flint's anonymous
+# namespace, none a template): the sort's three (count, scan, scatter), the offsets, and the two that
+# sum, dwte's rows of a token and dwpe's first pass.
+EMBEDDING_BACKWARD_KERNELS = [
+    pytest.param("17embedding_offsets", id="offsets"),
+    pytest.param("19embedding_sort_scan", id="sort_scan"),
+    pytest.param("20embedding_sort_count", id="sort_count"),
+    pytest.param("22embedding_sort_scatter", id="sort_scatter"),
+    pytest.param("24embedding_backward_words", id="words"),
+    pytest.param("36embedding_backward_position_partials", id="position_partials"),
+]
+# The kernels that rank the lanes of a warp that share a digit with __match_any_sync.
+MATCHING_KERNELS = ("20embedding_sort_count", "22embedding_sort_scatter")
+SUMMING_KERNELS = ("24embedding_backward_words", "36embedding_backward_position_partials")
+# The float multiplies (a multiply-add included): the sums must only add.
+FLOAT_MULTIPLIES = {"FMUL", "FMUL32I", "FFMA", "DMUL", "DFMA", "HMUL2", "HFMA2"}
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+@pytest.mark.parametrize("symbol", EMBEDDING_BACKWARD_KERNELS)
+def test_embedding_backward_kernels_have_no_spills_atomics_or_flushing_and_the_sums_only_add(arch, symbol):
+    kernels = {name: body for name, body in library_functions(arch).items() if symbol in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    ops = opcodes(body)
+    # The results are bit-exact against a float32 emulation, which has subnormals, and the sort and
+    # the offsets work on integers: no instruction of any kernel may flush to zero.
+    assert ".FTZ" not in body, name
+    # The extraction finds something: every kernel loads and stores global memory.
+    assert any(op.startswith("LDG") for op in ops), name
+    assert any(op.startswith("STG") for op in ops), name
+    # Counting and scattering by digit: the warp's lanes with one digit found by MATCH.ANY (the scan
+    # and the offsets have no use for it).
+    assert ("MATCH.ANY" in ops) == (symbol in MATCHING_KERNELS), name
+    if symbol in SUMMING_KERNELS:
+        # The compensated sums are TwoSum's additions and subtractions on the data, in IEEE
+        # round-to-nearest, one operation at a time: FADD only. A multiply, or the FFMA a compiler
+        # fuses one into, would change the bits (the emulation has neither).
+        assert any(op.split(".")[0] == "FADD" for op in ops), name
+        assert not [op for op in ops if op.split(".")[0] in FLOAT_MULTIPLIES], name
+        # Both read dx in 16-byte pieces: dwte's 4 columns of a row, dwpe's 8 values (two loads).
+        assert any(op.startswith("LDG.E.128") for op in ops), name

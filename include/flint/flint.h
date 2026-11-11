@@ -267,6 +267,48 @@ FLINT_API flint_status flint_embedding_forward(void* x, const void* tokens, cons
                                                const void* wpe, size_t sequences, size_t length,
                                                size_t vocab, size_t width, flint_stream stream);
 
+/* The embedding's backward pass, asynchronously on stream. dx is the gradient of the
+ * forward pass's x, (sequences * length) x width FP32, and tokens its sequences *
+ * length uint16 values, as flint_embedding_forward takes them. It computes
+ *   dwte[v, :], the sum of dx[r, :] over the rows r whose token is v, for each v below
+ *     vocab: vocab x width FP32. Every row is written, +0 where no row's token is v;
+ *     with accumulate_wte nonzero, each row some token reaches gets its sum added
+ *     with one FP32 add, and the others are unchanged.
+ *   dwpe[t, :], the sum of dx[s * length + t, :] over the sequences s, for each t
+ *     below length: the first length rows of dwpe, written, or with accumulate_wpe
+ *     nonzero added to with one FP32 add each. Rows past length aren't touched.
+ * The sums are compensated FP32 (TwoSum), in an order that depends only on the
+ * inputs' shape and values: a token's rows in ascending order, and dwpe as
+ * flint_bias_gradient sums the columns of dx viewed as sequences x (length * width).
+ * There are no atomics, so the result is deterministic, and the same on every GPU. The
+ * tokens are bucketed by a sort in the workspace first. An inf or NaN in dx reaches the
+ * sums that include it. Rows with -0 sum to +0.
+ *
+ * A token at or above vocab reaches no row of dwte, so the call never writes out of
+ * bounds, but its row of dx is lost to dwte: flint_embedding_forward reads out of
+ * bounds for such a token, so the caller checks the tokens. Its row still reaches dwpe.
+ *
+ * width must be a multiple of 8 from 8 to 16,776,960, vocab from 1 to 65,536, and
+ * length from 1 with length * width at most 16,776,960; sequences must be from 1, with
+ * sequences * length at most 4,294,967,295. It needs the workspace that
+ * flint_embedding_backward_workspace sizes. All pointers must be 16-byte aligned, and
+ * dwte, dwpe and the workspace must not overlap each other or the inputs. The call
+ * uses the workspace until the stream has run it, so calls on other streams need their
+ * own. */
+FLINT_API flint_status flint_embedding_backward(void* dwte, void* dwpe, const void* dx,
+                                                const void* tokens, size_t sequences,
+                                                size_t length, size_t vocab, size_t width,
+                                                int accumulate_wte, int accumulate_wpe,
+                                                void* workspace, size_t workspace_bytes,
+                                                flint_stream stream);
+
+/* The workspace flint_embedding_backward needs for sequences x length tokens, vocab and
+ * width, in bytes, in *bytes: flint_bias_gradient_workspace's size for sequences x
+ * (length * width), plus about 12 bytes per row and 4 per token of vocab. */
+FLINT_API flint_status flint_embedding_backward_workspace(size_t sequences, size_t length,
+                                                          size_t vocab, size_t width,
+                                                          size_t* bytes);
+
 /* Converts count FP32 values at x to FP16 at y, asynchronously on stream. Each
  * value rounds to nearest, ties to even, so overflow gives inf (nothing
  * saturates) and a NaN stays a NaN. Any count works, not only multiples of 4,
