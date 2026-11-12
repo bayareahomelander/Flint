@@ -59,13 +59,21 @@ git -C "$repo" archive refs/precheck/latest | tar -x -C "$dir"
 cleanup_ref
 
 status=0
-"$micromamba" run -n flint bash "$dir/scripts/check.sh" -q || status=1
+# GPT-2's whole micro-batch must run here: with too little free memory its gate fails
+# rather than skips. The log, outside the copy so it doesn't mark it, keeps pytest's last
+# line for the summary below.
+log="$HOME/.cache/flint-tmp/precheck.log"
+FLINT_REQUIRE_MICRO_BATCH=1 "$micromamba" run -n flint bash "$dir/scripts/check.sh" -q 2>&1 |
+    tee "$log" || status=1
+# A gate that passed only on its retry (tests/retry_report.py) is counted on that line.
+retried="$(grep -Eo '[0-9]+ retried' "$log" | tail -n 1 || true)"
+rm -f "$log"
 if [ "$status" -eq 0 ]; then
     "$micromamba" run -n flint python "$dir/scripts/sanitize.py" || status=1
 fi
 if [ "$status" -eq 0 ]; then
     rm -rf "$dir"
-    echo "precheck: passed"
+    echo "precheck: passed${retried:+, with $retried: see GATE PASSED ONLY ON RETRY above}"
 else
     echo "precheck: FAILED; the server copy is kept in $dir" >&2
 fi

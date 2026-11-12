@@ -53,6 +53,7 @@ from test_gpt2 import (  # also puts scripts/ on sys.path
     check_measured,
     data_file,
     free_memory,
+    gate_scale,
     gpt2_config,
     int_view,
     measure,
@@ -293,7 +294,7 @@ def measured_case(flint, hf, openai, sequences, length, weights):
     key = (sequences, length, weights)
     if key in CASES:
         return CASES[key]
-    rows, scale = sequences * length, 1.0 / (sequences * length)
+    rows, scale = sequences * length, gate_scale(sequences * length)
     config = gpt2_config(GPT2, sequences, length)
     model = openai if weights == "exact" else rounded_to_fp16(openai)
     results = []
@@ -363,7 +364,7 @@ def test_padded_dlogits_are_zero_and_a_second_pass_gives_the_same_bits(flint, op
     sequences, length = 2, 256
     config = gpt2_config(GPT2, sequences, length)
     batch = window_batch(sequences, length, 0)
-    scale = 1.0 / batch.rows
+    scale = gate_scale(batch.rows)
     with Gpt2(flint, config) as m:
         m.load(state_of(openai_model))
         m.forward(batch.tokens, batch.target_tokens, scale)

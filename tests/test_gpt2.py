@@ -10,16 +10,22 @@ max-abs, over 3 seeds (gate.py). It covers
   - the mean loss, against the FP64 cross-entropy of the FP32 model's logits, with autocast's
     own model(idx, targets) as the peer: its log_softmax runs in FP16, which is what a model
     trained with autocast gets, so the gate is deliberately against that;
-  - dlogits below vocab at scale 1 / rows, against the FP64 softmax gradient of the FP32
-    logits, with autograd through autocast's cross-entropy on an FP16 leaf as the peer
-    (test_cross_entropy.py's autocast_peer).
+  - dlogits below vocab at scale 2^16 / rows, GradScaler's first loss scale over the mean
+    loss, against the FP64 softmax gradient of the FP32 logits, with autograd through
+    autocast's cross-entropy on an FP16 leaf as the peer (test_cross_entropy.py's
+    autocast_peer). At scale 1 / rows, GPT-2's gradients away from the target are below
+    FP16's smallest subnormal and round to 0 in Flint and the peer alike, so a gate there
+    compares the target's column and nothing else.
 The shapes are the tiny config at 4 shapes, three odd models (other head widths, a length below
 block_size, a vocabulary ending mid-chunk) and GPT-2 at (2, 256), (1, 1024) and (8, 64), on
 the init and on a mid-training mix (nonzero biases, LayerNorm parameters moved), with random
 tokens and, at GPT-2 (1, 1024), real FineWeb-Edu tokens. GPT-2's whole micro-batch,
 (16, 1024), runs when the GPU has 16 GiB free (the 2080 Ti); a failed gate there is retried
-once, at another placement, and a pass on the retry is reported (gate_with_retry,
-retry_report.py), which tests on the tiny config check. The logits, dlogits and references are
+once, at another placement; a pass on the retry counts only if the two attempts' outputs
+differ as one flipped bit of memory would make them, within one sequence per seed, and it is
+reported (gate_with_retry, retry_report.py), which tests on the tiny config check. With
+FLINT_REQUIRE_MICRO_BATCH=1, as precheck sets it, too little free memory fails that test where
+it otherwise skips. The logits, dlogits and references are
 made and compared over chunks of rows, so GPT-2's 16,384 x 50,304 stays small. Every case
 prints its errors.
 
@@ -40,6 +46,7 @@ import ctypes
 import gc
 import hashlib
 import math
+import os
 import re
 import sys
 import types
@@ -77,6 +84,12 @@ MICRO_BATCH_FREE_BYTES = 16 * GiB
 # A failed micro-batch gate is retried once with this much GPU memory allocated first (see
 # gate_with_retry).
 RETRY_PADDING_BYTES = 1 * GiB
+# GradScaler's first loss scale. The gates run the loss's kernel at LOSS_SCALE / rows, the
+# gradient of the scaled mean loss, where GPT-2's gradients away from the target are normal
+# FP16 numbers (about 8e-5 at 16 x 1024, against 1.2e-9 at scale 1 / rows, which rounds to 0).
+LOSS_SCALE = 2.0**16
+# With this set to 1, as precheck sets it, the micro-batch gate fails where it would skip.
+REQUIRE_MICRO_BATCH = "FLINT_REQUIRE_MICRO_BATCH"
 # The device memory a created and destroyed model may leave behind, as the driver reports
 # it: a shared GPU's free memory moves by tens of MiB on its own (see the leak test).
 LEAK_TOLERANCE = 128 * MiB
@@ -410,21 +423,39 @@ class TorchReference:
 
 Measured = namedtuple(
     "Measured",
-    "logits loss dlogits flint_loss ref_loss peer_loss top1_flint top1_peer padded_ok",
+    "logits loss dlogits off_target flint_loss ref_loss peer_loss top1_flint top1_peer padded_ok fingerprint",
 )
+
+
+def gate_scale(rows):
+    """The loss's scale in the gates: GradScaler's first loss scale over the rows' mean loss."""
+    return LOSS_SCALE / rows
+
+
+def row_hashes(bits):
+    """One int64 per row of an integer matrix: its values times fixed odd weights, added up
+    with wraparound. A row with one changed element always gets another hash (an odd weight
+    times a difference below 2^32 is never 0 mod 2^64)."""
+    g = torch.Generator(device="cuda").manual_seed(bits.shape[1])
+    weights = torch.randint(-(2**62), 2**62, (bits.shape[1],), generator=g, device="cuda") | 1
+    return (bits.to(torch.int64) * weights).sum(1)
 
 
 def measure(m, config, reference, peer, targets, scale, peer_loss):
     """Flint's forward pass (already run on m) against a reference and a peer, over chunks of
     rows. reference(lo, hi) gives the reference's FP32 logits of those rows below vocab, and
     peer(lo, hi) the peer's FP16; targets are int64 on the GPU; scale is the loss scale the
-    forward ran with. Returns the (Flint, peer) errors of the logits, loss and dlogits."""
+    forward ran with. Returns the (Flint, peer) errors of the logits, the loss, dlogits, and
+    dlogits away from the targets (off_target: each row's target column set to 0 in all three).
+    A row's target holds nearly all of its gradient's norm (at init the rest is about 0.5% of
+    it), so the dlogits gate alone passes a 10% error in every other column."""
     vocab, padded, rows = config.vocab, config.padded_vocab, len(targets)
     logits_at, dlogits_at, _ = m.outputs()
     step = max(1, CHUNK_ELEMENTS // padded)
     scale32 = float(np.float32(scale))
-    flint_logits, peer_logits, flint_grad, peer_grad = (Accumulator() for _ in range(4))
+    flint_logits, peer_logits, flint_grad, peer_grad, flint_off, peer_off = (Accumulator() for _ in range(6))
     ref_loss_sum, agree_flint, agree_peer, padded_ok = 0.0, 0, 0, True
+    logit_hashes, grad_hashes = [], []
     for lo in range(0, rows, step):
         hi = min(lo + step, rows)
         tgt = targets[lo:hi]
@@ -432,6 +463,8 @@ def measure(m, config, reference, peer, targets, scale, peer_loss):
         fl = m.read(logits_at, (hi - lo, padded), torch.float16, lo * padded)
         fd = m.read(dlogits_at, (hi - lo, padded), torch.float16, lo * padded)
         padded_ok = padded_ok and all_equal(int_view(fl)[:, vocab:], 0) and all_equal(int_view(fd)[:, vocab:], 0)
+        logit_hashes.append(row_hashes(int_view(fl)))
+        grad_hashes.append(row_hashes(int_view(fd)))
         flint_logits.add(fl[:, :vocab], ref)
         peer_logits.add(peer_chunk, ref)
 
@@ -446,26 +479,36 @@ def measure(m, config, reference, peer, targets, scale, peer_loss):
                 loss = F.cross_entropy(leaf, tgt, reduction="none")
             (loss.sum() * scale).backward()
         peer_grad.add(leaf.grad, grad)
+        at_targets = (torch.arange(hi - lo, device="cuda"), tgt)
+        flint_rest, peer_rest = fd[:, :vocab].clone(), leaf.grad.clone()
+        flint_rest[at_targets] = peer_rest[at_targets] = grad[at_targets] = 0
+        flint_off.add(flint_rest, grad)
+        peer_off.add(peer_rest, grad)
+        del flint_rest, peer_rest
 
         ref_top = ref.argmax(-1)
         agree_flint += int((fl[:, :vocab].argmax(-1) == ref_top).sum())
         agree_peer += int((peer_chunk.argmax(-1) == ref_top).sum())
         del ref, ref64, peer_chunk, fl, fd, grad, leaf
     flint_loss, ref_loss = m.mean_loss(), ref_loss_sum / rows
+    # Each row's outputs as three integers, which gate_with_retry compares between attempts.
+    row_loss_bits = int_view(m.read(m.outputs()[2], (rows,), torch.float32)).to(torch.int64)
+    fingerprint = torch.stack([torch.cat(logit_hashes), torch.cat(grad_hashes), row_loss_bits], 1).cpu()
     return Measured(
         (flint_logits.errors(), peer_logits.errors()),
         (scalar_errors(flint_loss, ref_loss), scalar_errors(peer_loss, ref_loss)),
         (flint_grad.errors(), peer_grad.errors()),
-        flint_loss, ref_loss, peer_loss, agree_flint / rows, agree_peer / rows, padded_ok,
+        (flint_off.errors(), peer_off.errors()),
+        flint_loss, ref_loss, peer_loss, agree_flint / rows, agree_peer / rows, padded_ok, fingerprint,
     )
 
 
 GATES = (("logits", gate.FORWARD_FACTOR, "fp16"), ("loss", gate.FORWARD_FACTOR, "fp32"),
-         ("dlogits", gate.GRADIENT_FACTOR, "fp16"))  # fmt: skip
+         ("dlogits", gate.GRADIENT_FACTOR, "fp16"), ("off_target", gate.GRADIENT_FACTOR, "fp16"))  # fmt: skip
 
 
 def check_measured(label, results, summaries=None):
-    """Runs the three gates over a list of Measured (one per seed), printing the numbers
+    """Runs the four gates over a list of Measured (one per seed), printing the numbers
     first, and appending them to summaries if given; returns the bounds by quantity. Raises
     one AssertionError with every failed gate."""
     failures, bounds, lines = [], {}, []
@@ -479,7 +522,7 @@ def check_measured(label, results, summaries=None):
             verdict = "FAILS"
             failures.append(f"{what}: {error}")
         lines.append(
-            f"  {what:8s} flint rel_l2 {max(e.rel_l2 for e in flint_errors):.3g} max_abs "
+            f"  {what:10s} flint rel_l2 {max(e.rel_l2 for e in flint_errors):.3g} max_abs "
             f"{max(e.max_abs for e in flint_errors):.3g} | peer rel_l2 "
             f"{max(e.rel_l2 for e in peer_errors):.3g} max_abs {max(e.max_abs for e in peer_errors):.3g} | {verdict}"
         )
@@ -500,16 +543,17 @@ def check_measured(label, results, summaries=None):
 
 
 def gate_case(flint, name, sequences, length, weights, tokens, seeds=gate.SEEDS, separate=False, cfg=None,
-              after_forward=None, summaries=None):  # fmt: skip
+              after_forward=None, summaries=None, fingerprints=None):  # fmt: skip
     """The whole-model gate on one shape: per seed, a model (weights "init" or "mixed"),
     random or real tokens, Flint's forward pass and the torch reference and peer; then the
     three gates over the seeds. name is a config of gpt2_torch's, unless cfg gives one.
     after_forward(seed, m, config), if given, runs after each forward pass (the retry's tests
-    use it to corrupt an output); summaries goes to check_measured."""
+    use it to corrupt an output); summaries goes to check_measured, and fingerprints, if
+    given, gets each seed's Measured.fingerprint before the gates are checked."""
     cfg = cfg or G.CONFIGS[name]
     config = gpt2_config(cfg, sequences, length, separate)
     rows = sequences * length
-    scale = 1.0 / rows
+    scale = gate_scale(rows)
     results = []
     for seed in seeds:
         model = make_model(cfg, seed, weights)
@@ -531,41 +575,83 @@ def gate_case(flint, name, sequences, length, weights, tokens, seeds=gate.SEEDS,
                 )
         del model, batch, torch_ref, ids
         free_memory()
+    if fingerprints is not None:
+        fingerprints.extend(r.fingerprint for r in results)
     label = f"{name} {sequences}x{length} {weights} weights, {tokens} tokens" + (", separate buffers" if separate else "")
     return check_measured(label, results, summaries)
 
 
-def gate_with_retry(flint, *args, record, after_forward=None, **kwargs):
+def attempt_differences(first, second, length):
+    """How Flint's outputs differ between two attempts on the same data: per seed, the rows
+    whose logits, dlogits or row_loss differ, as (rows differing, sequences they lie in, the
+    first and the last such row). first and second hold each seed's Measured.fingerprint."""
+    differences = []
+    for a, b in zip(first, second, strict=True):
+        rows = (a != b).any(1).nonzero().flatten()
+        sequences = sorted(set((rows // length).tolist()))
+        ends = (int(rows[0]), int(rows[-1])) if len(rows) else (None, None)
+        differences.append((len(rows), sequences, *ends))
+    return differences
+
+
+def describe_differences(differences, length):
+    lines = []
+    for seed, (count, sequences, first, last) in enumerate(differences):
+        if count == 0:
+            lines.append(f"  seed {seed}: Flint's outputs are the same bits in both attempts")
+        else:
+            lines.append(
+                f"  seed {seed}: {count} rows differ, from row {first} (sequence {first // length}, position "
+                f"{first % length}) to row {last} (sequence {last // length}, position {last % length}), in "
+                f"{len(sequences)} sequence(s): {sequences[:8]}{'...' if len(sequences) > 8 else ''}"
+            )
+    return "\n".join(lines)
+
+
+def gate_with_retry(flint, name, sequences, length, weights, tokens, *, record, after_forward=None, **kwargs):
     """gate_case, retried once if its gate fails, with RETRY_PADDING_BYTES allocated first;
     returns the bounds. When only the retry passed, it calls record (the test's record_property)
-    with retry_report.PROPERTY and a text with the first attempt's failure and the retry's
-    numbers, which retry_report.py shows even under pytest -q. If the retry fails too, raises
-    one AssertionError with both failures. Anything else than a failed gate (a skip, running out
-    of memory, a CUDA error) isn't retried. after_forward(attempt, seed, m, config), if given,
-    runs after each forward pass, with attempt 0 or 1.
+    with retry_report.PROPERTY and a text with the first attempt's failure, how the two attempts'
+    outputs differ and the retry's numbers, which retry_report.py shows even under pytest -q. If
+    the retry fails too, raises one AssertionError with both failures. Anything else than a failed
+    gate (a skip, running out of memory, a CUDA error) isn't retried. after_forward(attempt, seed,
+    m, config), if given, runs after each forward pass, with attempt 0 or 1.
 
-    Why: on the 2080 Ti this gate has failed now and then with one wrong value, one bit off,
-    that stays with a place in physical memory rather than with the data, most likely a weak
-    spot in its memory, which has no ECC. In one model a row was wrong in 15-26 of 40 passes;
-    with 1 GiB allocated before the model, the same run was wrong in 0 of 80. The retry's
-    padding moves every later allocation the same way. A failure that follows the data or the
-    kernels repeats, so it still fails; a Flint bug tied to a placement could pass on the retry,
-    which is why every retry is reported."""
+    Why: one cell of the 2080 Ti's memory, which has no ECC, sometimes reads a 1 back as 0
+    (found by a memory test that runs none of Flint's code). When a buffer of Flint's lands on
+    it, one value of one pass is wrong: a logit, or an activation, whose error causal attention
+    carries to the later positions of its sequence. With 1 GiB allocated before the model, the
+    same run was wrong in 0 of 80. The retry's padding moves every later allocation the same
+    way. A failure that follows the data or the kernels repeats, so it still fails.
 
-    def attempt(number, summaries):
+    A pass on the retry alone would also let through a Flint bug that doesn't repeat (a race,
+    a read of stale memory). The data are the same in both attempts and Flint is deterministic,
+    so the attempts' outputs may differ only as one flipped activation or output makes them:
+    per seed, in rows of one sequence (one row, or a row and the later positions of its
+    sequence). Each seed's model is its own allocation, so each may meet the cell. Differences
+    in two sequences of one seed fail, whatever the retry measured. That is a narrower hole,
+    not a closed one: most kernels work within a sequence, so a bug that doesn't repeat can
+    stay inside one too and pass here, which is why the record gives the rows' count and span
+    for a reader to judge, and why scripts/sanitize_full.py exists. The other way round, the
+    cell can also fail this rule without any bug, by flipping a weight, or a value in a buffer
+    that every row passes through (the test's own chunk buffers); then the run is repeated."""
+
+    def attempt(number, summaries, fingerprints):
         hook = None if after_forward is None else (lambda *a: after_forward(number, *a))
-        return gate_case(flint, *args, after_forward=hook, summaries=summaries, **kwargs)
+        return gate_case(flint, name, sequences, length, weights, tokens, after_forward=hook,
+                         summaries=summaries, fingerprints=fingerprints, **kwargs)  # fmt: skip
 
+    first_prints = []
     try:
-        return attempt(0, None)
+        return attempt(0, None, first_prints)
     except AssertionError as error:
         first = str(error)
     # Leaving the except block drops the traceback, and with it the first attempt's frames.
     free_memory()
     padding = torch.empty(RETRY_PADDING_BYTES, dtype=torch.uint8, device="cuda")
-    summaries = []
+    summaries, retry_prints = [], []
     try:
-        bounds = attempt(1, summaries)
+        bounds = attempt(1, summaries, retry_prints)
     except AssertionError as error:
         raise AssertionError(
             f"the gate failed twice.\nFirst attempt:\n{first}\n"
@@ -574,9 +660,21 @@ def gate_with_retry(flint, *args, record, after_forward=None, **kwargs):
     finally:
         del padding
         free_memory()
+    # A first attempt that failed before every seed was measured has nothing to compare.
+    assert len(first_prints) == len(retry_prints), f"the first attempt failed before its gates:\n{first}"
+    differences = attempt_differences(first_prints, retry_prints, length)
+    described = describe_differences(differences, length)
+    if any(len(difference[1]) > 1 for difference in differences):
+        raise AssertionError(
+            "the gate passed on its retry, but Flint may not be deterministic: on the same data, the two "
+            "attempts' outputs differ in more than one sequence of a seed. One flipped activation can't "
+            "do that; a bug that doesn't repeat can, and so can a flip in a weight or in a buffer every "
+            f"row passes through. Run it again before deciding.\n{described}\nFirst attempt:\n{first}"
+        )
     record(
         retry_report.PROPERTY,
         f"The first attempt failed:\n{first}\n"
+        f"Flint's outputs, first attempt against retry:\n{described}\n"
         f"The retry, with {RETRY_PADDING_BYTES / GiB:g} GiB allocated first, passed:\n" + "\n".join(summaries),
     )
     return bounds
@@ -617,6 +715,27 @@ def test_gpt2_forward_passes_the_gate(flint, sequences, length, weights):
     gate_case(flint, "gpt2", sequences, length, weights, "random")
 
 
+def test_the_gates_scale_keeps_gpt2s_gradients_out_of_fp16s_underflow(flint):
+    # Why the gates run at LOSS_SCALE / rows. At init a gradient away from the target is about
+    # scale / vocab: at scale 1 / rows and 1,024 rows that is about a third of FP16's smallest
+    # subnormal, so every dlogits value but the targets' is 0 or one subnormal step, in Flint
+    # and in the peer, and a gate passes whatever those columns should hold. At the gates'
+    # scale they are normal numbers.
+    sequences, length = 1, 1024
+    config = gpt2_config(GPT2, sequences, length)
+    state = state_of(make_model(GPT2, 0, "init"))
+    batch = random_batch(GPT2, sequences, length, 0)
+    shares = {}
+    for name, scale in (("gate", gate_scale(batch.rows)), ("1/rows", 1.0 / batch.rows)):
+        dlogits = run_model(flint, config, state, batch, scale).dlogits[:, : config.vocab]
+        magnitudes = dlogits.float().abs()
+        assert torch.isfinite(magnitudes).all(), name
+        shares[name] = ((magnitudes > 0).float().mean().item(), (magnitudes >= 2.0**-14).float().mean().item())
+    print(f"dlogits nonzero / normal: gate scale {shares['gate']}, 1/rows {shares['1/rows']}")
+    assert shares["gate"][1] > 0.99, shares
+    assert shares["1/rows"][0] < 0.5 and shares["1/rows"][1] < 0.001, shares
+
+
 @pytest.mark.parametrize("weights", WEIGHTS)
 def test_gpt2_forward_passes_the_gate_on_real_tokens(flint, weights):
     gate_case(flint, "gpt2", 1, 1024, weights, "real")
@@ -626,7 +745,10 @@ def test_gpt2_forward_passes_the_gate_on_real_tokens(flint, weights):
 def test_gpt2_micro_batch_passes_the_gate(flint, weights, record_property):
     free = torch.cuda.mem_get_info()[0]
     if free < MICRO_BATCH_FREE_BYTES:
-        pytest.skip(f"GPT-2's (16, 1024) micro-batch needs {MICRO_BATCH_FREE_BYTES / GiB:.0f} GiB free, {free / GiB:.1f} GiB are")
+        reason = f"GPT-2's (16, 1024) micro-batch needs {MICRO_BATCH_FREE_BYTES / GiB:.0f} GiB free, {free / GiB:.1f} GiB are"
+        if os.environ.get(REQUIRE_MICRO_BATCH) == "1":
+            pytest.fail(f"{reason}, and {REQUIRE_MICRO_BATCH}=1 doesn't let this gate skip")
+        pytest.skip(reason)
     gate_with_retry(flint, "gpt2", 16, 1024, weights, "random", record=record_property)
 
 
@@ -653,16 +775,18 @@ def flip_a_logit(m, config, row=0):
 
 
 class Attempts:
-    """An after_forward hook that flips a logit of FAULTY_SEED on the given attempts and logs,
-    per call, the attempt, the seed and torch's allocated bytes (the padding is torch's)."""
+    """An after_forward hook that flips a logit in each of the given rows, for the given seeds,
+    on the given attempts and logs, per call, the attempt, the seed and torch's allocated bytes
+    (the padding is torch's)."""
 
-    def __init__(self, faulty=()):
-        self.faulty, self.calls = set(faulty), []
+    def __init__(self, faulty=(), rows=(0,), seeds=(FAULTY_SEED,)):
+        self.faulty, self.rows, self.seeds, self.calls = set(faulty), rows, seeds, []
 
     def __call__(self, attempt, seed, m, config):
         self.calls.append((attempt, seed, torch.cuda.memory_allocated()))
-        if attempt in self.faulty and seed == FAULTY_SEED:
-            flip_a_logit(m, config)
+        if attempt in self.faulty and seed in self.seeds:
+            for row in self.rows:
+                flip_a_logit(m, config, row)
 
     def attempts(self):
         return [c[0] for c in self.calls]
@@ -701,6 +825,65 @@ def test_a_failure_that_does_not_repeat_passes_on_the_retry(flint):
     assert first.startswith("The first attempt failed") and "logits: gate factor" in first
     assert re.search(FAULTY_LINE, first), first
     assert "GATE tiny 2x32" in second and "FAILS" not in second
+    # How the attempts differ: the faulty seed's one row, and nothing else.
+    faulty = gate.SEEDS.index(FAULTY_SEED)
+    assert f"seed {faulty}: 1 rows differ, from row 0 (sequence 0, position 0) to row 0 (" in first, first
+    for seed in range(len(gate.SEEDS)):
+        if seed != faulty:
+            assert f"seed {seed}: Flint's outputs are the same bits in both attempts" in first, first
+
+
+# RETRY_CASE has 2 sequences of 32 rows: rows 3 and 20 share a sequence, rows 0 and 32 don't.
+def test_differences_within_one_sequence_pass_on_the_retry(flint):
+    # One flipped activation reaches the later positions of its sequence, and no other.
+    hook, recorded = Attempts(faulty={0}, rows=(3, 20)), Recorder()
+    gate_with_retry(flint, *RETRY_CASE, record=recorded, after_forward=hook)
+    assert len(recorded) == 1, recorded
+    expected = "2 rows differ, from row 3 (sequence 0, position 3) to row 20 (sequence 0, position 20), in 1 sequence(s)"
+    assert expected in recorded[0][1], recorded[0][1]
+
+
+def test_each_seed_may_differ_in_a_sequence_of_its_own(flint):
+    # Each seed's model is its own allocation, so two seeds can meet the cell in one attempt.
+    hook, recorded = Attempts(faulty={0}, rows=(40,), seeds=gate.SEEDS[:2]), Recorder()
+    gate_with_retry(flint, *RETRY_CASE, record=recorded, after_forward=hook)
+    assert len(recorded) == 1, recorded
+    assert recorded[0][1].count("1 rows differ, from row 40 (sequence 1, position 8) to row 40 (") == 2, recorded[0][1]
+
+
+def test_differences_in_two_sequences_fail_though_the_retry_passes(flint):
+    # The retry's gate is clean, but no single flipped value changes two sequences of a pass:
+    # Flint gave different bits for the same data, which the retry must not hide.
+    hook, recorded = Attempts(faulty={0}, rows=(0, 32)), Recorder()
+    with pytest.raises(AssertionError) as caught:
+        gate_with_retry(flint, *RETRY_CASE, record=recorded, after_forward=hook)
+    text = str(caught.value)
+    assert hook.attempts() == [0] * len(gate.SEEDS) + [1] * len(gate.SEEDS)
+    assert torch.cuda.memory_allocated() < RETRY_PADDING_BYTES
+    assert recorded == []
+    assert text.startswith("the gate passed on its retry, but Flint may not be deterministic"), text
+    expected = "2 rows differ, from row 0 (sequence 0, position 0) to row 32 (sequence 1, position 0), in 2 sequence(s): [0, 1]"
+    assert expected in text, text
+    assert re.search(FAULTY_LINE, text), text
+
+
+@pytest.mark.parametrize("required", [False, True])
+def test_too_little_memory_skips_the_micro_batch_gate_or_fails_it_when_required(flint, monkeypatch, required):
+    monkeypatch.setattr(torch.cuda, "mem_get_info", lambda: (MICRO_BATCH_FREE_BYTES - 1, 24 * GiB))
+    if required:
+        monkeypatch.setenv(REQUIRE_MICRO_BATCH, "1")
+    else:
+        monkeypatch.delenv(REQUIRE_MICRO_BATCH, raising=False)
+    # Caught by hand: a skip raised inside pytest.raises would skip this test, not fail it.
+    try:
+        test_gpt2_micro_batch_passes_the_gate(flint, "init", Recorder())
+        outcome, message = "ran", ""
+    except pytest.skip.Exception as skipped:
+        outcome, message = "skipped", str(skipped)
+    except pytest.fail.Exception as failed:
+        outcome, message = "failed", str(failed)
+    assert outcome == ("failed" if required else "skipped"), (outcome, message)
+    assert "needs 16 GiB free" in message, message
 
 
 def test_a_failure_that_repeats_on_the_retry_fails(flint):
