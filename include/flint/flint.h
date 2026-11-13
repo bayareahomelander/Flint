@@ -433,7 +433,8 @@ FLINT_API flint_status flint_softmax_cross_entropy(void* dlogits, void* row_loss
                                                    size_t cols, flint_stream stream);
 
 /* GPT-2's forward pass, from tokens to logits, each row's loss and the logits'
- * gradient, through the functions above. A model owns its weights and buffers. */
+ * gradient, and its backward pass, from that gradient to every parameter's, through
+ * the functions above. A model owns its weights and buffers. */
 typedef struct flint_gpt2 flint_gpt2;
 
 /* A model's shape. width must be a multiple of 8 up to 16,384, heads must split it
@@ -442,7 +443,15 @@ typedef struct flint_gpt2 flint_gpt2;
  * padded_vocab. layers can be from 1 to 1,024. sequences must be positive, with
  * sequences * heads up to 65,535 and sequences * length up to 8,388,480.
  * separate_buffers nonzero gives each buffer its own allocation, so the sanitizer's
- * memcheck sees each buffer's bounds; the results are the same bits. */
+ * memcheck sees each buffer's bounds; the results are the same bits.
+ *
+ * backward nonzero lets the model run flint_gpt2_backward: it also holds a gradient
+ * per master weight, the backward pass's buffers, and each layer's activations,
+ * where a forward-only model reuses one set for every layer, so it takes far more
+ * memory. Its forward pass gives the same bits. It narrows two limits:
+ * sequences * length can be up to 65,536 (the weight gradients' GEMMs sum over the
+ * rows), and length * width up to 16,776,960 (the embedding's backward pass). Zero
+ * gives the forward-only model. */
 typedef struct {
     size_t layers;
     size_t heads;
@@ -453,6 +462,7 @@ typedef struct {
     size_t sequences;
     size_t length;
     int separate_buffers;
+    int backward;
 } flint_gpt2_config;
 
 /* A master weight: rows x cols FP32 in device memory, row-major and contiguous. A
@@ -464,14 +474,20 @@ typedef struct {
     size_t cols;
 } flint_gpt2_parameter_info;
 
-/* The device memory flint_gpt2_create would allocate, in *bytes. It doesn't touch
- * the GPU, so a caller can hold it against a memory cap first. */
+/* The device memory flint_gpt2_create would allocate, in *bytes, so a caller can
+ * hold it against a memory cap first. Without backward it doesn't touch the GPU.
+ * With backward it includes flint_gemm_tn's workspace, whose size depends on the
+ * current GPU's SM count, so it asks that GPU (flint_gemm_tn_workspace), and
+ * returns FLINT_ERROR_CUDA if it can't. */
 FLINT_API flint_status flint_gpt2_bytes(const flint_gpt2_config* config, size_t* bytes);
 
 /* Creates a model, with one allocation of flint_gpt2_bytes' size (more, in smaller
  * pieces, with separate_buffers). Its weights start uninitialized: write them
  * through flint_gpt2_parameter, then call flint_gpt2_sync_weights. Returns
- * FLINT_ERROR_CUDA if the memory isn't there, with *model null and nothing kept. */
+ * FLINT_ERROR_CUDA if the memory isn't there, with *model null and nothing kept.
+ * With backward, flint_gemm_tn's workspace is sized for the current GPU's SM count,
+ * so the backward pass must run on a GPU with the same count: on another,
+ * flint_gemm_tn may need more workspace and fail. */
 FLINT_API flint_status flint_gpt2_create(const flint_gpt2_config* config, flint_gpt2** model);
 
 /* Frees a model and its memory. Anything still using them on a stream must have
@@ -501,9 +517,47 @@ FLINT_API flint_status flint_gpt2_sync_weights(flint_gpt2* model, flint_stream s
  *
  * The buffers are reused, so a pass overwrites the last one's outputs, and the
  * model's calls must all use one stream at a time. If a launch fails partway, the
- * error returns and the outputs are unspecified. The result is deterministic. */
+ * error returns and the outputs are unspecified. The result is deterministic. With
+ * backward, the pass also keeps what flint_gpt2_backward reads. */
 FLINT_API flint_status flint_gpt2_forward(flint_gpt2* model, const void* tokens,
                                           const void* targets, float scale, flint_stream stream);
+
+/* GPT-2's backward pass, asynchronously on stream: from the dlogits that the last
+ * flint_gpt2_forward left, the gradient of every master weight, which
+ * flint_gpt2_gradient gives. dlogits already carries the forward pass's scale, so the
+ * gradients are those of scale times the sum of row_loss. The model must have been
+ * created with backward nonzero, or the call fails with FLINT_ERROR_INVALID_ARGUMENT.
+ * flint_gpt2_forward must have run on the same tokens, on the same stream, with
+ * nothing in between that changes the model: no other forward pass, and no change to
+ * the weights or flint_gpt2_sync_weights. The function can't check that, and
+ * otherwise the gradients are unspecified. tokens is as flint_gpt2_forward takes it,
+ * and must also not overlap the gradients.
+ *
+ * With accumulate zero, every gradient is written; with it nonzero, this pass's
+ * gradient is added to each, with one FP32 add per value, as accumulating over
+ * micro-batches needs, except for wte, which takes two adds in a fixed order:
+ * (old + the output layer's part) + the embedding's part. An accumulated wte is
+ * therefore not old + (the gradient a pass with accumulate zero would write) bit for
+ * bit. wpe's rows from length to block_size get no gradient: with accumulate zero
+ * they are set to +0, by a memset on the stream, not a kernel, and with it nonzero
+ * they are left as they are.
+ *
+ * It runs the layers last to first, through flint_gemm_tn, flint_bias_gradient,
+ * flint_layernorm_backward, flint_embedding_backward and the attention's and GELU's
+ * backward functions above, with the precisions they document: parameter gradients
+ * and the residual stream's gradient are FP32, and a linear layer's output gradient
+ * is the residual stream's rounded to FP16, as autocast's is. The sums are in fixed
+ * orders and there are no atomics, so the result is deterministic on a given GPU.
+ * If a launch fails partway, the error returns and the gradients are unspecified. */
+FLINT_API flint_status flint_gpt2_backward(flint_gpt2* model, const void* tokens, int accumulate,
+                                           flint_stream stream);
+
+/* The gradient of the index-th master weight: the name, rows and cols of
+ * flint_gpt2_parameter's, with data pointing at the FP32 gradient in device memory.
+ * Fails with FLINT_ERROR_INVALID_ARGUMENT for a model created without backward. The
+ * gradients start uninitialized, until a flint_gpt2_backward with accumulate zero. */
+FLINT_API flint_status flint_gpt2_gradient(const flint_gpt2* model, size_t index,
+                                           flint_gpt2_parameter_info* info);
 
 /* Where a forward pass leaves its outputs, in device memory, as
  * flint_softmax_cross_entropy describes them: logits and dlogits (sequences * length)

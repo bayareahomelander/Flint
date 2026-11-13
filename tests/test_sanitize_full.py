@@ -1,9 +1,11 @@
 """scripts/sanitize_full.py: which cases it runs and what passes one, without the tools."""
 
 import importlib.util
+import math
 import sys
 
 import pytest
+import torch
 
 import flint_lib
 
@@ -64,6 +66,16 @@ def test_the_overrides_reach_every_case(monkeypatch, capsys):
     assert [child_arguments(c) for c in commands] == [(1, 2, 64, 1), (1, 2, 64, 1), (1, 2, 64, 0)]
 
 
+def test_backward_reaches_every_case_and_only_when_asked(monkeypatch, capsys):
+    code, printed, commands = run_main(monkeypatch, capsys, ["--backward"], [f"{LOSS}\n{CLEAN}\n{RACECHECK_CLEAN}"])
+    assert code == 0, printed
+    assert len(commands) == 5 and all("--backward" in command for command in commands)
+    assert printed.count("backward") == 5
+    _, printed, commands = run_main(monkeypatch, capsys, [], [f"{LOSS}\n{CLEAN}\n{RACECHECK_CLEAN}"])
+    assert not any("--backward" in command for command in commands)
+    assert "backward" not in printed
+
+
 @pytest.mark.parametrize(
     "output",
     [
@@ -113,3 +125,57 @@ def test_a_busy_or_unknown_gpu_is_refused_unless_allowed(monkeypatch, capsys, us
 def test_an_idle_gpu_with_a_little_memory_in_use_runs(monkeypatch, capsys):
     code, _, commands = run_main(monkeypatch, capsys, ["--tools", "memcheck"], [f"{LOSS}\n{CLEAN}"], (0, full.BUSY_MIB))
     assert code == 0 and len(commands) == 1
+
+
+# -- --backward's check of the gradients (the child's exit code carries it) ------------------------
+
+VOCAB, PADDED, WIDTH = 5, 8, 8
+
+
+def wte_gradient(**changes):
+    gradient = torch.zeros(PADDED, WIDTH)
+    gradient[:VOCAB] = 1.0
+    for what, value in changes.items():
+        if what == "padded":
+            gradient[VOCAB, 3] = value
+        elif what == "real":
+            gradient[:VOCAB] = value
+    return gradient
+
+
+def test_a_gradient_that_a_backward_pass_gives_is_accepted():
+    assert full.gradient_problem("wte.weight", wte_gradient(), VOCAB) is None
+    assert full.gradient_problem("blocks.0.ln_1.bias", torch.tensor([[0.0, 0.0, -2.5, 0.0]]), VOCAB) is None
+    # Without padded rows, wte is an ordinary parameter.
+    assert full.gradient_problem("wte.weight", torch.ones(VOCAB, WIDTH), VOCAB) is None
+
+
+@pytest.mark.parametrize("bad", [math.nan, math.inf, -math.inf], ids=["nan", "inf", "-inf"])
+def test_a_gradient_that_is_not_finite_is_refused(bad):
+    gradient = torch.ones(3, 4)
+    gradient[1, 2] = bad
+    assert "not finite" in full.gradient_problem("blocks.1.mlp.c_fc.weight", gradient, VOCAB)
+    assert "not finite" in full.gradient_problem("wte.weight", wte_gradient(real=bad), VOCAB)
+
+
+def test_a_gradient_that_is_all_zero_is_refused():
+    assert "all zero" in full.gradient_problem("ln_f.weight", torch.zeros(1, 8), VOCAB)
+    assert "all zero" in full.gradient_problem("wpe.weight", -torch.zeros(4, 8), VOCAB)
+    # wte's real rows must have a value too: nonzero padded rows don't count for it, and are
+    # refused for being nonzero anyway.
+    assert "all zero" in full.gradient_problem("wte.weight", wte_gradient(real=0.0), VOCAB)
+
+
+@pytest.mark.parametrize("value", [1e-30, 1.0, -0.0], ids=["tiny", "one", "negative-zero"])
+def test_wtes_padded_rows_must_be_exactly_plus_zero(value):
+    assert "padded rows" in full.gradient_problem("wte.weight", wte_gradient(padded=value), VOCAB)
+    # The same value in a row below vocab is fine, and in another parameter nothing is padded.
+    assert full.gradient_problem("blocks.0.attn.c_attn.weight", wte_gradient(padded=value), VOCAB) is None
+
+
+def test_a_child_that_reports_a_bad_gradient_fails_the_case(monkeypatch, capsys):
+    # The child's exit code is what carries the check: the parent already requires 0.
+    output = f"{LOSS}\n{full.PROBLEM_LINE}the gradient of ln_f.bias is all zero\n{CLEAN}"
+    code, printed, _ = run_main(monkeypatch, capsys, ["--tools", "memcheck", "--backward"], [output], exit_code=1)
+    assert code == 1 and "FAIL" in printed and "PASS" not in printed
+    assert "the gradient of ln_f.bias is all zero" in printed

@@ -38,6 +38,7 @@ class Gpt2Config(ctypes.Structure):
         ("sequences", ctypes.c_size_t),
         ("length", ctypes.c_size_t),
         ("separate_buffers", ctypes.c_int),
+        ("backward", ctypes.c_int),
     ]
 
 
@@ -382,6 +383,14 @@ SIGNATURES = {
     "flint_gpt2_forward": (
         ctypes.c_int,
         [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_float, ctypes.c_void_p],
+    ),
+    "flint_gpt2_backward": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p],
+    ),
+    "flint_gpt2_gradient": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(Gpt2ParameterInfo)],
     ),
     "flint_gpt2_outputs": (
         ctypes.c_int,
@@ -790,10 +799,18 @@ class Gpt2:
 
     def parameters(self) -> list:
         """(name, address, rows, cols) of each master weight, in the library's order."""
+        return self._infos(self.flint.lib.flint_gpt2_parameter)
+
+    def gradients(self) -> list:
+        """(name, address, rows, cols) of each master weight's FP32 gradient, in the same
+        order; the model must have been created with backward."""
+        return self._infos(self.flint.lib.flint_gpt2_gradient)
+
+    def _infos(self, function) -> list:
         out = []
         for i in range(self.flint.lib.flint_gpt2_parameter_count(self.handle)):
             info = Gpt2ParameterInfo()
-            self.flint.check(self.flint.lib.flint_gpt2_parameter(self.handle, i, ctypes.byref(info)))
+            self.flint.check(function(self.handle, i, ctypes.byref(info)))
             out.append((info.name.decode(), info.data, info.rows, info.cols))
         return out
 
@@ -814,6 +831,15 @@ class Gpt2:
         self.flint.check(
             self.flint.lib.flint_gpt2_forward(
                 self.handle, pointer(tokens), pointer(targets), scale, stream_handle(stream)
+            )
+        )
+
+    def backward(self, tokens, accumulate=False, stream=None) -> None:
+        """Every master weight's gradient from the last forward pass, which must have run on
+        the same tokens and stream; written, or with accumulate added to each."""
+        self.flint.check(
+            self.flint.lib.flint_gpt2_backward(
+                self.handle, pointer(tokens), int(accumulate), stream_handle(stream)
             )
         )
 
