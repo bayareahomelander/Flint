@@ -20,17 +20,22 @@ RACECHECK_CLEAN = "========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0
 LOSS = f"{full.LOSS_LINE}10.97864"
 
 
-def run_main(monkeypatch, capsys, arguments, outputs, use=(0, 0), exit_code=0):
+def run_main(monkeypatch, capsys, arguments, outputs, use=(0, 0), exit_code=0, named=None):
     """main() with the tool replaced: each case's run returns exit_code and the next of outputs
-    (the last one repeats). Returns its exit code, what it printed and the commands."""
+    (the last one repeats). `named` is what FLINT_COMPUTE_SANITIZER holds, if anything. Returns
+    its exit code, what it printed and the commands."""
     commands, pending = [], list(outputs)
 
     def run(command):
         commands.append(command)
         return exit_code, pending.pop(0) if len(pending) > 1 else pending[0], 1.0
 
+    monkeypatch.delenv(full.sanitize.SANITIZER_VARIABLE, raising=False)
+    if named is not None:
+        monkeypatch.setenv(full.sanitize.SANITIZER_VARIABLE, str(named))
     monkeypatch.setattr(full.sanitize, "run", run)
-    monkeypatch.setattr(full.shutil, "which", lambda name: "compute-sanitizer")
+    monkeypatch.setattr(full.sanitize, "tool_version", lambda sanitizer: "Version 2026.1.1")
+    monkeypatch.setattr(full.sanitize.shutil, "which", lambda name: "compute-sanitizer")
     monkeypatch.setattr(full, "gpu_use", lambda: use)
     monkeypatch.setattr(full.sys, "argv", ["sanitize_full.py", *arguments])
     code = full.main()
@@ -57,6 +62,24 @@ def test_the_default_cases_are_gpt2s_micro_batch(monkeypatch, capsys):
     # memcheck, racecheck and synccheck see only Flint's kernels; initcheck sees torch's writes.
     for tool, command in zip(tools, commands):
         assert ("kns=5flint" in command) == (tool != "initcheck")
+
+
+def test_the_tool_is_the_one_sanitize_chooses(monkeypatch, capsys, tmp_path):
+    tool = tmp_path / "compute-sanitizer"
+    tool.write_text("#!/bin/sh\n")
+    tool.chmod(0o755)
+    arguments = ["--tools", "memcheck,initcheck"]
+    code, printed, commands = run_main(monkeypatch, capsys, arguments, [f"{LOSS}\n{CLEAN}"], named=tool)
+    assert code == 0 and len(commands) == 3
+    assert all(command[0] == str(tool) for command in commands)
+    assert f"compute-sanitizer: {tool} (Version 2026.1.1)" in printed
+    # Without the variable, the one on PATH; with a missing file, nothing runs.
+    _, _, commands = run_main(monkeypatch, capsys, arguments, [f"{LOSS}\n{CLEAN}"])
+    assert all(command[0] == "compute-sanitizer" for command in commands)
+    code, printed, commands = run_main(
+        monkeypatch, capsys, arguments, [f"{LOSS}\n{CLEAN}"], named=tmp_path / "missing"
+    )
+    assert code == 1 and commands == [] and full.sanitize.SANITIZER_VARIABLE in printed
 
 
 def test_the_overrides_reach_every_case(monkeypatch, capsys):

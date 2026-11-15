@@ -17,6 +17,13 @@ else
 fi
 "$micromamba" run -n flint python -m pip install --no-input -r "$root/requirements.txt"
 
+# The compute-sanitizer that precheck.sh runs; see scripts/sanitizer-environment.yml.
+if "$micromamba" env list | awk '{print $1}' | grep -qx sancheck; then
+    "$micromamba" install -y -n sancheck --strict-channel-priority -f "$root/scripts/sanitizer-environment.yml"
+else
+    "$micromamba" create -y -n sancheck --strict-channel-priority -f "$root/scripts/sanitizer-environment.yml"
+fi
+
 "$micromamba" run -n flint bash -c '
     nvcc --version | tail -1
     g++ --version | head -1
@@ -25,3 +32,4 @@ fi
     nsys --version
     python -c "import torch; print(\"torch\", torch.__version__, \"CUDA\", torch.version.cuda, torch.cuda.get_device_name())"
 '
+"$micromamba" run -n sancheck bash -c 'echo "compute-sanitizer $(compute-sanitizer --version | tail -1)"'

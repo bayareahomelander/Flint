@@ -6,7 +6,8 @@
 # It snapshots the working tree (tracked and untracked files, minus ignored
 # ones) as a temporary commit, pushes it to refs/precheck/latest on the
 # `server` remote, and runs check.sh and sanitize.py on a copy of it in
-# ~/.cache/flint-tmp. The host, path, and SSH key come from this repository's
+# ~/.cache/flint-tmp (sanitize.py with the compute-sanitizer of the server's
+# `sancheck` environment). The host, path, and SSH key come from this repository's
 # config, so nothing here names the server.
 set -euo pipefail
 
@@ -53,6 +54,16 @@ if [ "$processes" -ne 0 ] || [ "$used_mib" -gt 512 ]; then
     exit 2
 fi
 
+# The sanitizer runs compute-sanitizer 2026.1.1 from the sancheck environment, since
+# 2024.1.1 intermittently crashes on this driver. Look for it now, so a missing one
+# doesn't cost the whole test run first.
+sanitizer="$("$micromamba" run -n sancheck bash -c 'command -v compute-sanitizer' 2>/dev/null)" || sanitizer=""
+if [ -z "$sanitizer" ]; then
+    echo "precheck: compute-sanitizer isn't in the sancheck environment; run scripts/setup_server.sh" >&2
+    cleanup_ref
+    exit 2
+fi
+
 rm -rf "$dir"
 mkdir -p "$dir"
 git -C "$repo" archive refs/precheck/latest | tar -x -C "$dir"
@@ -69,7 +80,7 @@ FLINT_REQUIRE_MICRO_BATCH=1 "$micromamba" run -n flint bash "$dir/scripts/check.
 retried="$(grep -Eo '[0-9]+ retried' "$log" | tail -n 1 || true)"
 rm -f "$log"
 if [ "$status" -eq 0 ]; then
-    "$micromamba" run -n flint python "$dir/scripts/sanitize.py" || status=1
+    FLINT_COMPUTE_SANITIZER="$sanitizer" "$micromamba" run -n flint python "$dir/scripts/sanitize.py" || status=1
 fi
 if [ "$status" -eq 0 ]; then
     rm -rf "$dir"

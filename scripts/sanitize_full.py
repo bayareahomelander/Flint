@@ -26,13 +26,15 @@ while another process uses the GPU or holds its memory, unless --allow-busy is g
 laptop's desktop always does; its 6 GiB hold the default cases' 5.4 GB only just, so use the
 overrides there). Run it by hand after a change to the model's assembly. scripts/sanitize.py's
 canaries, which precheck runs, show that the tools and the kernel filter see Flint's kernels.
+It uses the same compute-sanitizer as sanitize.py (the executable that FLINT_COMPUTE_SANITIZER
+names, else the one on PATH) and prints its path and version first; on the server, set the
+variable to the `sancheck` environment's tool, as precheck.sh does.
 Exits nonzero if a case fails.
 """
 
 import argparse
 import math
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -173,10 +175,10 @@ def main():
     unknown = [tool for tool in tools if tool not in CASES]
     if unknown:
         parser.error(f"unknown tools {unknown}; choose from {sanitize.TOOLS}")
-    sanitizer = shutil.which("compute-sanitizer")
+    sanitizer = sanitize.find_sanitizer()
     if sanitizer is None:
-        print("compute-sanitizer not found on PATH (enter the dev shell, or install the CUDA toolkit)")
         return 1
+    sanitize.announce_sanitizer(sanitizer)
     if not args.allow_busy:
         use = gpu_use()
         if use is None or use[0] != 0 or use[1] > BUSY_MIB:

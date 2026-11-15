@@ -8,9 +8,13 @@ warnings too. Two canaries then run deliberately broken calls and must be
 caught: an out-of-bounds read under memcheck, and an uninitialized read under
 initcheck. Unrecognized arguments go to pytest. Exits nonzero if any run fails.
 
-On the 2080 Ti server, memcheck and initcheck intermittently crash while
-reporting an error they caught, so a canary also counts as caught when its run
-fails with that crash. Diagnose such errors on the laptop.
+A canary counts as caught only when its run exits nonzero and prints the
+expected message. The tool is the one on PATH, or the executable that the
+environment variable FLINT_COMPUTE_SANITIZER names; the log starts with its
+path and version. On the 2080 Ti server, compute-sanitizer 2024.1.1 crashes
+intermittently while reporting an error it caught, so such a run proves nothing
+about Flint's kernels. The server's precheck therefore runs compute-sanitizer
+2026.1.1 from the `sancheck` micromamba environment (scripts/setup_server.sh).
 """
 
 import argparse
@@ -32,23 +36,36 @@ FILTERED_TOOLS = ["memcheck", "racecheck", "synccheck"]
 # Padding after each allocation lets memcheck catch reads that run into a
 # neighbouring allocation; plain cudaMalloc often packs them back to back.
 MEMCHECK_PADDING = ["--padding", "65536"]
-# On the server (compute-sanitizer 2024.1.1, driver 595, Turing), reporting a
-# device error intermittently crashes the tool; "kernel" mode kept memcheck
-# reporting through one such spell, though not through all of them.
-COMMON_OPTIONS = ["--error-exitcode", "1", "--destroy-on-device-error", "kernel"]
+# On the server, compute-sanitizer 2024.1.1 (driver 595, Turing) intermittently
+# crashes while reporting a device error. That is the tool's fault, and 2026.1.1
+# doesn't do it. "kernel" mode once kept 2024.1.1 reporting through some of those
+# crashes; it does no harm, so it stays.
+# 2026.1.1's default for --report-api-errors is "extended", which also reports CUDA's
+# log messages, such as torch's internal kernels that aren't found in their library.
+# "explicit" reports only failed explicit API calls, which was 2024.1.1's default.
+COMMON_OPTIONS = [
+    "--error-exitcode", "1",
+    "--destroy-on-device-error", "kernel",
+    "--report-api-errors", "explicit",
+]  # fmt: skip
 
 # What each canary does, and the output that proves the tool caught it.
 CANARIES = {
     "out-of-bounds": ("memcheck", "Invalid __global__ read"),
     "uninitialized": ("initcheck", "Uninitialized __global__ memory read"),
 }
-# How a report crashes on the server. A canary run that fails with it still
-# proves the tool trapped on Flint's kernel: memcheck's padding keeps the
-# over-read in mapped memory, and the initcheck canary's kernel is valid, so
-# neither can fault on its own.
+# How compute-sanitizer 2024.1.1 crashes on the server's driver while reporting.
+# A canary that crashes this way didn't report, so it fails; the explanation
+# below is printed with it, since the cause is the tool and not Flint.
 REPORT_CRASH = (
     "Internal Sanitizer Error: The Sanitizer failed to handle a hardware exception"
 )
+CRASH_NOTE = (
+    "this is the tool's crash, not Flint's: compute-sanitizer 2024.1.1 does this on the "
+    "server's driver; the server's precheck runs 2026.1.1 from the sancheck environment"
+)
+# Names the compute-sanitizer to run, instead of the one on PATH.
+SANITIZER_VARIABLE = "FLINT_COMPUTE_SANITIZER"
 
 
 def canary_child(name):
@@ -70,6 +87,47 @@ def canary_child(name):
         dst = torch.zeros(n, dtype=torch.uint8, device="cuda")
         flint.copy(dst, src, n)
     torch.cuda.synchronize()
+
+
+def find_sanitizer():
+    """The compute-sanitizer to run: the file FLINT_COMPUTE_SANITIZER names, else the one on
+    PATH. Returns its path, or None after printing why there is none."""
+    named = os.environ.get(SANITIZER_VARIABLE)
+    if named:
+        if not (os.path.isfile(named) and os.access(named, os.X_OK)):
+            print(f"{SANITIZER_VARIABLE} is {named!r}, which is not an existing executable file")
+            return None
+        return named
+    found = shutil.which("compute-sanitizer")
+    if found is None:
+        print(
+            f"compute-sanitizer not found on PATH and {SANITIZER_VARIABLE} is not set "
+            "(enter the dev shell, or install the CUDA toolkit)"
+        )
+    return found
+
+
+def tool_version(sanitizer):
+    """The last line of the tool's --version output, or a note that it didn't answer. The run
+    doesn't depend on it, so a failure here is not one."""
+    try:
+        result = subprocess.run(
+            [sanitizer, "--version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            errors="replace",
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return "version unknown"
+    lines = result.stdout.strip().splitlines()
+    return lines[-1].strip() if lines else "version unknown"
+
+
+def announce_sanitizer(sanitizer):
+    # Printed once, so a log shows which tool ran.
+    print(f"compute-sanitizer: {sanitizer} ({tool_version(sanitizer)})", flush=True)
 
 
 def sanitizer_command(sanitizer, tool, child):
@@ -144,10 +202,10 @@ def main():
     unknown = [tool for tool in tools if tool not in TOOLS]
     if unknown:
         parser.error(f"unknown tools {unknown}; choose from {TOOLS}")
-    sanitizer = shutil.which("compute-sanitizer")
+    sanitizer = find_sanitizer()
     if sanitizer is None:
-        print("compute-sanitizer not found on PATH (enter the dev shell, or install the CUDA toolkit)")
         return 1
+    announce_sanitizer(sanitizer)
 
     failed = False
     for tool in tools:
@@ -166,12 +224,11 @@ def main():
             continue
         child = [sys.executable, script, "--canary", name]
         code, output, seconds = run(sanitizer_command(sanitizer, tool, child))
-        reported = message in output
-        unreported = REPORT_CRASH in output
-        caught = code != 0 and (reported or unreported)
+        caught = code != 0 and message in output
         failed |= not caught
-        label = f"{tool} canary ({name}{', unreported' if caught and not reported else ''})"
-        report(label, caught, error_count(output), seconds, output)
+        report(f"{tool} canary ({name})", caught, error_count(output), seconds, output)
+        if not caught and REPORT_CRASH in output:
+            print(CRASH_NOTE, flush=True)
 
     return 1 if failed else 0
 

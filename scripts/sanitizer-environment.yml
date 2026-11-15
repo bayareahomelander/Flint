@@ -1,0 +1,11 @@
+# The compute-sanitizer that scripts/precheck.sh runs on the 2080 Ti server, in its own
+# environment so the flint environment's CUDA 12.4 toolkit stays as it is. Create or
+# update it with scripts/setup_server.sh.
+# 13.2.87 is compute-sanitizer 2026.1.1, from the newest CUDA that driver 595 supports.
+# The 2024.1.1 in the flint environment intermittently crashes on this driver while
+# reporting an error it caught, which leaves a canary unproven.
+name: sancheck
+channels:
+  - conda-forge
+dependencies:
+  - cuda-sanitizer-api=13.2.87
