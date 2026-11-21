@@ -56,6 +56,32 @@ WindowStats merge(const std::vector<WindowStats>& windows) {
     return merged;
 }
 
+// Cycles per nanosecond in MHz; 0 without a measurement.
+double kernel_mhz(unsigned long long cycles, unsigned long long ns) {
+    return ns > 0 ? static_cast<double>(cycles) / static_cast<double>(ns) * 1e3 : 0;
+}
+
+// Why a sample's clock deltas can't be trusted, or an empty string if they can.
+// The interval between the probes must hold the sample, and not much besides:
+// idle time inside it reads the clock low, since an idle GPU's counter nearly
+// stops. And a clock far above the device's maximum means the counters aren't
+// counting what they should. Only the clock is suspect then, not the sample's
+// timing, which the probes sit outside of, so the caller drops the reading and
+// keeps the round.
+std::string clock_problem(const TimedSample& sample, const DeviceInfo& device) {
+    const double interval_ms = sample.kernel_ns * 1e-6;
+    if (interval_ms > sample.sample_ms + std::max(0.05 * sample.sample_ms, 0.5)) {
+        return "the clock probes spanned " + std::to_string(interval_ms) + " ms around a " +
+               std::to_string(sample.sample_ms) + " ms sample";
+    }
+    if (device.max_sm_clock_mhz > 0 && sample.kernel_sm_mhz > 1.1 * device.max_sm_clock_mhz) {
+        return "the clock probes read " + std::to_string(sample.kernel_sm_mhz) +
+               " MHz, above the device's maximum of " + std::to_string(device.max_sm_clock_mhz) +
+               " MHz";
+    }
+    return "";
+}
+
 SideSummary summarize(long long launches_per_sample, const std::vector<const TimedSample*>& samples,
                       const CaseSpec& spec, const DeviceInfo& device) {
     SideSummary side;
@@ -65,14 +91,24 @@ SideSummary summarize(long long launches_per_sample, const std::vector<const Tim
     }
     std::vector<double> ms_per_launch;
     std::vector<WindowStats> windows;
+    std::vector<double> kernel_mhz_samples;
     side.min_sample_ms = samples.front()->sample_ms;
     for (const TimedSample* sample : samples) {
         ms_per_launch.push_back(sample->ms_per_launch);
         windows.push_back(sample->stats);
         side.min_sample_ms = std::min(side.min_sample_ms, sample->sample_ms);
+        if (sample->kernel_sm_mhz > 0) {
+            kernel_mhz_samples.push_back(sample->kernel_sm_mhz);
+        }
     }
     side.ms_per_launch = median(ms_per_launch);
     side.stats = merge(windows);
+    // The median, like ms_per_launch, whose TFLOPS this clock is divided into: a
+    // time-weighted mean over a clock ramp is dragged toward the slow rounds
+    // and would inflate the fraction.
+    if (!kernel_mhz_samples.empty()) {
+        side.kernel_sm_mhz = median(kernel_mhz_samples);
+    }
     if (spec.bytes_moved > 0) {
         side.gbs = spec.bytes_moved / (side.ms_per_launch * 1e-3) / 1e9;
         if (device.rated_bandwidth_gbs > 0) {
@@ -91,8 +127,17 @@ SideSummary summarize(long long launches_per_sample, const std::vector<const Tim
             side.rated_compute_fraction = side.tflops / (per_mhz * device.rated_sm_clock_mhz);
         }
         if (per_mhz > 0 && side.stats.sm_mhz > 0) {
-            side.clock_adjusted_compute_fraction = side.tflops / (per_mhz * side.stats.sm_mhz);
+            side.nvml_clock_adjusted_compute_fraction = side.tflops / (per_mhz * side.stats.sm_mhz);
         }
+        if (!spec.kernel_clock) {
+            side.clock_adjusted_compute_fraction = side.nvml_clock_adjusted_compute_fraction;
+        } else if (per_mhz > 0 && side.kernel_sm_mhz > 0) {
+            // The GPU's counters, which NVML's clock can't match on a short sample.
+            side.clock_adjusted_compute_fraction = side.tflops / (per_mhz * side.kernel_sm_mhz);
+        }
+        // else stays 0: a case with a probe and no trusted reading has no
+        // clock-adjusted fraction. NVML's clock is the stale one the probe
+        // replaces, so it isn't a stand-in.
     }
     return side;
 }
@@ -227,10 +272,34 @@ CaseResult run_case(const CaseSpec& spec, const DeviceInfo& device, Monitor& mon
     auto timed_sample = [&](int side, double& begin, double& end) {
         TimedSample sample;
         sample.launches = launches[side];
+        // The clock readings sit right outside the sample, so the interval between
+        // them is the sample and a sync and a probe on each side, nothing the
+        // monitor's window waits for. They synchronize and copy, so they stay
+        // outside the monitor's window and the timed one.
+        const bool read_clock = side == 0 && spec.kernel_clock;
+        KernelClock before, after;
+        if (read_clock) {
+            before = spec.kernel_clock(stream);
+        }
         begin = monitor.now();
         sample.sample_ms = timer.time(*sides[side], stream, next, sample.launches);
         end = monitor.now();
         next += sample.launches;
+        if (read_clock) {
+            after = spec.kernel_clock(stream);
+            // Deltas only where the counters moved forward, so nothing wraps.
+            if (after.cycles > before.cycles && after.ns > before.ns) {
+                sample.kernel_cycles = after.cycles - before.cycles;
+                sample.kernel_ns = after.ns - before.ns;
+                sample.kernel_sm_mhz = kernel_mhz(sample.kernel_cycles, sample.kernel_ns);
+                sample.kernel_clock_problem = clock_problem(sample, device);
+                if (!sample.kernel_clock_problem.empty()) {
+                    sample.kernel_sm_mhz = 0;
+                }
+            } else {
+                sample.kernel_clock_problem = "the clock probes went backwards";
+            }
+        }
         sample.ms_per_launch = sample.sample_ms / sample.launches;
         // Launches keep getting faster after calibration for small kernels, so
         // grow later samples back past sample_ms whenever one falls short.

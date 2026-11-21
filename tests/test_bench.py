@@ -77,6 +77,21 @@ def assert_stats_follow_from_rounds(stats, windows):
     assert stats["new_process"] == any(w["new_process"] for w in windows)
 
 
+def assert_no_kernel_clock(side, samples):
+    """A side without a clock reading (everything but mma): the summary and
+    every sample in `samples` leave the kernel's clock null, and the NVML-based
+    fraction is the one the summary reports."""
+    assert side["kernel_sm_mhz"] is None
+    for sample in samples:
+        assert sample["kernel_cycles"] is None
+        assert sample["kernel_ns"] is None
+        assert sample["kernel_sm_mhz"] is None
+        assert sample["kernel_clock_problem"] is None
+    assert side["nvml_clock_adjusted_compute_fraction"] == pytest.approx(
+        side["clock_adjusted_compute_fraction"]
+    )
+
+
 def assert_baseline_algorithm(algorithm, selection):
     """A cuBLASLt case's candidates: 1 to 8 of them in the heuristic's order,
     with their configurations, at least one that launched and was timed, and
@@ -218,6 +233,8 @@ def test_quick_copy(exe, tmp_path):
             assert len(stats["reason_shares"]) == 9
             assert all(0 <= share <= 1 for share in stats["reason_shares"].values())
             assert_stats_follow_from_rounds(stats, [r[name]["stats"] for r in valid])
+            assert side["clock_adjusted_compute_fraction"] is None
+            assert_no_kernel_clock(side, [r[name] for r in valid])
 
         stride = (case["size_bytes"] + 255) // 256 * 256
         assert case["rotation_sets"] * 2 * stride > 4 * device["l2_bytes"]
@@ -636,6 +653,7 @@ def test_quick_gemm(exe, tmp_path, layout, epilogue, shape_list):
             stats = side["stats"]
             assert stats["samples"] > 0 and stats["sm_mhz"] > 0
             assert_stats_follow_from_rounds(stats, [r[name]["stats"] for r in valid])
+            assert_no_kernel_clock(side, [r[name] for r in valid])
 
         # The sets together must exceed 4x the L2 cache: size_bytes is one
         # set's x, w and y (FP32 for tn and bias-residual), plus pre (as big as
@@ -735,17 +753,68 @@ def test_quick_mma(exe, tmp_path):
         assert flint["tflops"] == pytest.approx(
             case["flops"] / (flint["ms_per_launch"] * 1e-3) / 1e12
         )
-        assert flint["clock_adjusted_compute_fraction"] > 0
+        stats = flint["stats"]
+        assert stats["samples"] > 0 and stats["sm_mhz"] > 0
+        assert_stats_follow_from_rounds(stats, [r["flint"]["stats"] for r in valid])
+
+        # A probe kernel reads the SM's cycle counter and the global timer,
+        # since NVML's clock can lag a short sample by half a second. A
+        # reading the harness doesn't trust (the probes went backwards, spanned
+        # much more than the sample, or read above the device's maximum clock)
+        # loses its clock and says why, but its round stays valid: the probes
+        # sit outside the sample, so its timing is fine. That happens in
+        # earnest under the sanitizer, whose slow launches stretch the interval.
+        for r in case["rounds"]:
+            sample = r["flint"]
+            if sample["kernel_ns"] is not None:
+                assert sample["kernel_ns"] >= sample["sample_ms"] * 1e6 * 0.999
+        trusted = []
+        for r in valid:
+            sample = r["flint"]
+            problem = sample["kernel_clock_problem"]
+            if problem is not None:
+                assert isinstance(problem, str) and problem
+                assert sample["kernel_sm_mhz"] is None
+                continue
+            # Each round's clock follows from its own deltas, and the interval
+            # holds the sample and not much besides.
+            interval_ms = sample["kernel_ns"] * 1e-6
+            assert interval_ms <= sample["sample_ms"] + max(0.05 * sample["sample_ms"], 0.5)
+            assert sample["kernel_cycles"] > 0 and sample["kernel_ns"] > 0
+            assert sample["kernel_sm_mhz"] > 0
+            assert sample["kernel_sm_mhz"] == pytest.approx(
+                sample["kernel_cycles"] / sample["kernel_ns"] * 1e3
+            )
+            trusted.append(sample["kernel_sm_mhz"])
+        # The summary's clock is the median of the trusted valid rounds', as the
+        # TFLOPS is the median round's.
+        per_mhz = case["peak_flop_per_sm_per_clock"] * device["sm_count"] * 1e6 / 1e12
+        if trusted:
+            # No faster than the device's maximum clock, give or take.
+            assert 0 < flint["kernel_sm_mhz"] <= 1.1 * device["max_sm_clock_mhz"]
+            assert flint["kernel_sm_mhz"] == pytest.approx(statistics.median(trusted))
+            # The fraction divides the same TFLOPS by the peak at that clock.
+            assert flint["clock_adjusted_compute_fraction"] == pytest.approx(
+                flint["tflops"] / (per_mhz * flint["kernel_sm_mhz"])
+            )
+        else:
+            # Never NVML's clock as a stand-in: it is the stale one the probe replaces.
+            assert flint["kernel_sm_mhz"] is None
+            assert flint["clock_adjusted_compute_fraction"] is None
+        assert flint["nvml_clock_adjusted_compute_fraction"] == pytest.approx(
+            flint["tflops"] / (per_mhz * stats["sm_mhz"])
+        )
         if not UNDER_SANITIZER:
-            # The 2080 Ti measures 99% of the clock-adjusted peak and the laptop
-            # 82-94%, depending on its power state; far below that means a
-            # kernel that doesn't saturate the tensor cores.
+            # The sanitizer may leave a case without a trusted clock; a normal
+            # run must not.
+            assert trusted
+            # The 2080 Ti measures 99% of the clock-adjusted peak. On the
+            # probe's clock the laptop measured 0.71-1.00 across 60 quick runs
+            # in two power states (0.94-0.98 in the fast one). Far below that
+            # means a kernel that doesn't saturate the tensor cores.
             assert 0.6 <= flint["clock_adjusted_compute_fraction"] <= 1.05
         if rated_clock is None:
             assert flint["rated_compute_fraction"] is None
         else:
             peak = case["peak_flop_per_sm_per_clock"] * device["sm_count"] * rated_clock * 1e6 / 1e12
             assert flint["rated_compute_fraction"] == pytest.approx(flint["tflops"] / peak)
-        stats = flint["stats"]
-        assert stats["samples"] > 0 and stats["sm_mhz"] > 0
-        assert_stats_follow_from_rounds(stats, [r["flint"]["stats"] for r in valid])

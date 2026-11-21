@@ -22,6 +22,11 @@ def percent(fraction):
     return f"{100 * fraction:.1f}%"
 
 
+def sm_clock(flint):
+    """The SM clock a fraction was computed at: the probe's where the log has it, else NVML's."""
+    return flint.get("kernel_sm_mhz") or flint["stats"]["sm_mhz"]
+
+
 def one_sided(case):
     return case.get("one_sided", False)
 
@@ -136,7 +141,7 @@ def render_compute(log, link, cases):
         adjusted_cell = percent(adjusted) if adjusted else "-"
         lines.append(
             f"| {case['label']} | {flint['tflops']:.1f} | {rated_cell} | {adjusted_cell} "
-            f"| {flint['stats']['sm_mhz']:.0f} MHz | {flint['stats']['power_w']:.0f} W "
+            f"| {sm_clock(flint):.0f} MHz | {flint['stats']['power_w']:.0f} W "
             f"| {case['valid_rounds']}/{len(case['rounds'])} | {flags(case)} |"
         )
     return lines

@@ -37,6 +37,24 @@ struct Options {
 // `first`, uses buffer set i % rotation_sets. Throws on failure.
 using Launcher = std::function<void(cudaStream_t stream, long long first, long long count)>;
 
+// One reading of the SM's cycle counter and of the GPU's global timer, in
+// nanoseconds, taken together on one SM. Between two readings on that SM,
+// cycles per nanosecond is its mean clock over the interval.
+struct KernelClock {
+    unsigned long long cycles = 0;
+    unsigned long long ns = 0;
+};
+
+// Takes a reading. It enqueues its work on `stream` behind whatever is there
+// and synchronizes before returning, so run_case calls it only when the stream
+// is idle: right before and right after each sample, never inside one. A
+// sample's clock is then the mean SM clock over the interval between the two.
+// That interval holds the sample plus about 0.14 ms of idle GPU around it (a
+// sync and a probe on each side, as measured on the laptop): about 1% of a
+// quick sample and 0.1% of a standard one, which reads the clock slightly
+// low.
+using KernelClockReader = std::function<KernelClock(cudaStream_t stream)>;
+
 struct CaseSpec {
     std::string benchmark;      // such as "copy"
     std::string label;          // such as "16 MiB"
@@ -53,12 +71,26 @@ struct CaseSpec {
     // Empty for a one-sided case, which has no baseline to interleave with
     // and is judged against the peaks alone.
     Launcher reference;
+    // Empty unless the case reads the SM clock from the GPU, which NVML's
+    // coarse clock can't give a short sample.
+    KernelClockReader kernel_clock;
 };
 
 struct TimedSample {
     long long launches = 0;
     double ms_per_launch = 0;
     double sample_ms = 0;
+    // The SM clock the case's kernel_clock hook measured over the interval that
+    // covers this sample: the deltas in cycles and nanoseconds, and their
+    // ratio in MHz. All 0 where there is no hook, or where the readings went
+    // backwards (no deltas then). A reading that fails the guard keeps its
+    // deltas but gets 0 MHz, and the reason lands in kernel_clock_problem,
+    // which is empty for a trusted reading and where there is no hook. Such a
+    // reading says nothing about the sample's timing, so the round stays valid.
+    unsigned long long kernel_cycles = 0;
+    unsigned long long kernel_ns = 0;
+    double kernel_sm_mhz = 0;
+    std::string kernel_clock_problem;
     WindowStats stats;
 };
 
@@ -80,10 +112,18 @@ struct SideSummary {
     double rated_fraction = 0;           // of DeviceInfo::rated_bandwidth_gbs
     double clock_adjusted_fraction = 0;  // of 2 x mean memory clock x bus width
     double tflops = 0;                   // 0 unless the case counts FLOPs
+    // The SM clock the GPU's counters gave: the median of the valid samples'
+    // trusted clocks, the typical sample's as ms_per_launch and the TFLOPS are;
+    // 0 where there is no trusted one.
+    double kernel_sm_mhz = 0;
     // Of peak_flop_per_sm_per_clock x SMs x the rated SM clock (0 where that
-    // clock is unknown), and of the same at the mean SM clock in the samples.
+    // clock is unknown), and of the same at the SM clock in the samples. The
+    // second is the counters' clock for a case with a kernel_clock hook, and 0
+    // where that has no trusted reading; NVML's mean for a case without one.
+    // The last is always NVML's.
     double rated_compute_fraction = 0;
     double clock_adjusted_compute_fraction = 0;
+    double nvml_clock_adjusted_compute_fraction = 0;
     WindowStats stats;  // merged, weighted by time
 };
 

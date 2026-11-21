@@ -35,7 +35,8 @@ def test_rows_match_the_log(path):
         if case.get("one_sided"):  # mma: Flint against the GPU's peak
             assert cells[1] == f"{flint['tflops']:.1f}"
             assert cells[3] == f"{100 * flint['clock_adjusted_compute_fraction']:.1f}%"
-            assert cells[4] == f"{flint['stats']['sm_mhz']:.0f} MHz"
+            clock = flint.get("kernel_sm_mhz") or flint["stats"]["sm_mhz"]
+            assert cells[4] == f"{clock:.0f} MHz"
             assert cells[6] == rounds
             continue
         base, ratio = case["baseline"], case["ratio"]
@@ -147,6 +148,24 @@ def test_compute_table_with_rated_peak():
         ["m16n8k8 f16->f32, 4 chains", "50.0", "50.0%", "60.0%", "1530 MHz", "183 W", "3/4", "-"],
         ["m16n8k8 f16->f32, 8 chains", "80.0", "80.0%", "90.0%", "1530 MHz", "183 W", "3/4", "-"],
     ]
+
+
+def test_compute_table_shows_the_probe_clock_the_fraction_used():
+    # A log with the probe's clock shows it, not NVML's, beside the fraction.
+    log = synthetic_compute_log(None)
+    log["cases"][0]["flint"]["kernel_sm_mhz"] = 2210.4
+    cells = table_cells(results_table.render(log, "mma.json"))
+    assert [row[4] for row in cells] == ["2210 MHz", "1530 MHz"]
+
+
+def test_compute_table_shows_a_dash_for_a_case_without_a_trusted_clock():
+    # A probe log whose readings were all untrusted has a null fraction and clock.
+    log = synthetic_compute_log(None)
+    flint = log["cases"][0]["flint"]
+    flint["clock_adjusted_compute_fraction"] = None
+    flint["kernel_sm_mhz"] = None
+    cells = table_cells(results_table.render(log, "mma.json"))
+    assert cells[0][3] == "-"
 
 
 def test_compute_table_without_rated_peak():

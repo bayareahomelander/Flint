@@ -5,13 +5,16 @@
 #include <string>
 #include <vector>
 
+#include "clock_probe.cuh"
 #include "common.h"
 #include "mma_kernels.cuh"
 
 namespace bench {
 namespace {
 
+using flint::microbench::kClockProbeSlots;
 using flint::microbench::kMmaThreads;
+using flint::microbench::launch_clock_probe;
 using flint::microbench::launch_mma_m16n8k8_f32;
 using flint::microbench::mma_m16n8k8_f32_blocks_per_sm;
 
@@ -44,18 +47,22 @@ CaseResult bench_mma(int chains, const DeviceInfo& device, Monitor& monitor, con
     const int iterations = kStepsPerLaunch / chains;
     const size_t outputs = size_t{static_cast<unsigned>(blocks)} * kMmaThreads * 4;
 
-    void* buffers[2] = {nullptr, nullptr};
+    constexpr size_t kProbeBytes = 2 * kClockProbeSlots * sizeof(unsigned long long);
+    void* buffers[3] = {nullptr, nullptr, nullptr};
     struct Free {
         void** buffers;
         ~Free() {
             cudaFree(buffers[0]);
             cudaFree(buffers[1]);
+            cudaFree(buffers[2]);
         }
     } free_buffers{buffers};
     check_cuda(cudaMalloc(&buffers[0], outputs * sizeof(float)), "cudaMalloc");
     check_cuda(cudaMalloc(&buffers[1], outputs * sizeof(float)), "cudaMalloc");
+    check_cuda(cudaMalloc(&buffers[2], kProbeBytes), "cudaMalloc");
     float* out = static_cast<float*>(buffers[0]);
     float* check = static_cast<float*>(buffers[1]);
+    auto* probe_slots = static_cast<unsigned long long*>(buffers[2]);
 
     const double warps = double(blocks) * kMmaThreads / 32;
     CaseSpec spec;
@@ -69,6 +76,44 @@ CaseResult bench_mma(int chains, const DeviceInfo& device, Monitor& monitor, con
             check_cuda(launch_mma_m16n8k8_f32(chains, blocks, iterations, kValue, out, s),
                        "mma_m16n8k8_f32");
         }
+    };
+    // The SM clock, from a probe kernel's (clock64, %globaltimer) pair. Two
+    // readings must come from the same SM, since the SMs' counters differ by
+    // hundreds of millions of cycles: the first reading picks the lowest SM that
+    // has a pair, and every later one uses it. A launch can miss an SM, so a
+    // missing pair is retried, and failing loudly after that is deliberate: a
+    // clock from another SM would be silently wrong.
+    int pinned_sm = -1;
+    spec.kernel_clock = [&](cudaStream_t s) {
+        std::vector<unsigned long long> pairs(2 * kClockProbeSlots);
+        for (int attempt = 0; attempt < 10; ++attempt) {
+            check_cuda(cudaMemsetAsync(probe_slots, 0, kProbeBytes, s), "cudaMemsetAsync");
+            check_cuda(launch_clock_probe(device.sm_count, probe_slots, s), "clock_probe");
+            // Once an SM is pinned, only its two slots come back.
+            const bool whole = pinned_sm < 0;
+            const size_t first = whole ? 0 : 2 * static_cast<size_t>(pinned_sm);
+            const size_t count = whole ? pairs.size() : 2;
+            check_cuda(cudaMemcpyAsync(pairs.data(), probe_slots + first,
+                                       count * sizeof(unsigned long long),
+                                       cudaMemcpyDeviceToHost, s),
+                       "cudaMemcpyAsync");
+            check_cuda(cudaStreamSynchronize(s), "cudaStreamSynchronize");
+            if (whole) {
+                for (int sm = 0; sm < kClockProbeSlots; ++sm) {
+                    if (pairs[2 * sm + 1] != 0) {
+                        pinned_sm = sm;
+                        break;
+                    }
+                }
+            }
+            if (pinned_sm >= 0) {
+                const size_t at = whole ? 2 * static_cast<size_t>(pinned_sm) : 0;
+                if (pairs[at + 1] != 0) {
+                    return KernelClock{pairs[at], pairs[at + 1]};
+                }
+            }
+        }
+        throw std::runtime_error("mma: the clock probe found no pair on its SM");
     };
 
     CaseResult result = run_case(spec, device, monitor, options, stream);

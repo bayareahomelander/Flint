@@ -3,6 +3,7 @@
 # gemm baselines); the library never does.
 add_executable(flint_bench
   cli.cpp
+  clock_probe.cu
   copy_bench.cpp
   gemm_bench.cpp
   harness.cpp

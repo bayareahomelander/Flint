@@ -94,7 +94,9 @@ std::vector<std::string> summary_row(const CaseResult& c) {
             row.push_back(prefix + (side.rated_compute_fraction > 0
                                         ? percent(side.rated_compute_fraction) + " rated"
                                         : "rated n/a"));
-            row.push_back(prefix + percent(side.clock_adjusted_compute_fraction) + " clk-adj");
+            row.push_back(prefix + (side.clock_adjusted_compute_fraction > 0
+                                        ? percent(side.clock_adjusted_compute_fraction) + " clk-adj"
+                                        : "clk-adj n/a"));
         };
         add_fractions(c.one_sided ? "" : "flint ", c.flint);
         if (!c.one_sided) {
@@ -244,6 +246,16 @@ void write_window(JsonWriter& json, const char* name, const WindowStats& s) {
     json.end_object();
 }
 
+// A value that is 0 where it wasn't measured: null then.
+void write_positive(JsonWriter& json, const char* name, double value) {
+    json.key(name);
+    if (value > 0) {
+        json.value(value);
+    } else {
+        json.null();
+    }
+}
+
 void write_side(JsonWriter& json, const char* name, const SideSummary& s) {
     json.key(name);
     json.begin_object();
@@ -266,6 +278,9 @@ void write_side(JsonWriter& json, const char* name, const SideSummary& s) {
     } else {
         json.null();
     }
+    write_positive(json, "nvml_clock_adjusted_compute_fraction",
+                   s.nvml_clock_adjusted_compute_fraction);
+    write_positive(json, "kernel_sm_mhz", s.kernel_sm_mhz);
     write_window(json, "stats", s.stats);
     json.end_object();
 }
@@ -276,6 +291,28 @@ void write_sample(JsonWriter& json, const char* name, const TimedSample& s) {
     json.field("launches", s.launches);
     json.field("sample_ms", s.sample_ms);
     json.field("ms_per_launch", s.ms_per_launch);
+    // The SM clock's cycle and nanosecond deltas, null for a sample without them.
+    json.key("kernel_cycles");
+    if (s.kernel_ns > 0) {
+        json.value(s.kernel_cycles);
+    } else {
+        json.null();
+    }
+    json.key("kernel_ns");
+    if (s.kernel_ns > 0) {
+        json.value(s.kernel_ns);
+    } else {
+        json.null();
+    }
+    // The clock is null where there is no trusted reading. Why a reading isn't
+    // trusted follows it: null for a trusted reading and for a case without a hook.
+    write_positive(json, "kernel_sm_mhz", s.kernel_sm_mhz);
+    json.key("kernel_clock_problem");
+    if (s.kernel_clock_problem.empty()) {
+        json.null();
+    } else {
+        json.value(s.kernel_clock_problem);
+    }
     write_window(json, "stats", s.stats);
     json.end_object();
 }
