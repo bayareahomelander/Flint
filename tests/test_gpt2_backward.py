@@ -113,8 +113,9 @@ from test_gpt2 import (  # also puts scripts/ on sys.path
 import gpt2_torch as G  # noqa: E402  (test_gpt2 put scripts/ on sys.path)
 
 # GPT-2's micro-batch with backward needs this much free GPU memory: Flint's model takes 14.6 GiB
-# there, and the padding, the gradients read back and the comparison's temporaries a few more. It
-# must be re-measured on the 2080 Ti, whose 22 GiB it has to fit in.
+# there, and the padding, the gradients read back and the comparison's temporaries a few more. On
+# the 2080 Ti (22 GiB) the gate's used memory peaked at 16.0 GiB (16,346 MiB run alone, 16,402 MiB
+# through precheck's tests), and 20 GiB leaves room for the retry's 1 GiB of padding.
 MICRO_BATCH_FREE_BYTES = 20 * GiB
 # The micro-batch's autograd runs this many sequences at a time (GPT-2's FP32 autograd of 2,048
 # rows takes about 5 GiB on top of the model and its gradients).
@@ -226,16 +227,18 @@ def kind_of(name):
     return "linear weights" if leaf == "weight" else "linear biases"
 
 
-def torch_gradients(model, micro_batches, chunk, peer):
-    """Every parameter's gradient (CPU tensors, by name, torch's shapes) of 2^16 times the mean
-    loss of each micro-batch added up, from gpt2_torch's model: the FP32 reference
-    (peer=False), or the autocast FP16 peer (peer=True) with a GradScaler at its initial scale
-    of 2^16, whose .grad is read without unscaling (a peer gradient that isn't finite would mean
-    that the scale is too large for the shape, and the gate fails on it). The model runs chunk
-    sequences at a time, each pass's loss weighted by its share of its micro-batch's rows, so
-    the sum is the same loss. The peer's .grad accumulates in FP32 over the passes, as PyTorch's
-    does in training; the reference's are added up in FP64 when there is more than one pass."""
-    scaler = torch.amp.GradScaler("cuda", init_scale=LOSS_SCALE) if peer else None
+def torch_gradients(model, micro_batches, chunk, peer, loss_scale=LOSS_SCALE):
+    """Every parameter's gradient (CPU tensors, by name, torch's shapes) of loss_scale (2^16 unless
+    a caller passes another) times the mean loss of each micro-batch added up, from gpt2_torch's
+    model: the FP32 reference (peer=False), or the autocast FP16 peer (peer=True) with a
+    GradScaler at its initial scale of loss_scale, whose .grad is read without unscaling (a peer
+    gradient that isn't finite would mean that the scale is too large for the shape, and the gate
+    fails on it; a caller that backs the scale off, as GradScaler would, passes the smaller one).
+    The model runs chunk sequences at a time, each pass's loss weighted by its share of its
+    micro-batch's rows, so the sum is the same loss. The peer's .grad accumulates in FP32 over
+    the passes, as PyTorch's does in training; the reference's are added up in FP64 when there
+    is more than one pass."""
+    scaler = torch.amp.GradScaler("cuda", init_scale=loss_scale) if peer else None
     passes = [(b, lo) for b in micro_batches for lo in range(0, b.sequences, chunk)]
     total = {}
     with gate.peer_math():
@@ -248,7 +251,7 @@ def torch_gradients(model, micro_batches, chunk, peer):
             if peer:
                 scaler.scale(loss).backward()
                 continue
-            (loss * LOSS_SCALE).backward()
+            (loss * loss_scale).backward()
             if len(passes) > 1:
                 for name, p in model.named_parameters():
                     if name in total:

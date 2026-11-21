@@ -29,6 +29,22 @@ The tokens are windows of real FineWeb-Edu text, 3 each at (1, 1024), (2, 256) a
     Flint's and autocast's top-1 predictions agree with the FP32 model's on at least 95% of
     the tokens. The padded dlogits are +0 and a second pass gives the same bits.
 
+  - Flint's gradients are GPT-2's: M2's done rule for the gradients (the gate of
+    test_gpt2_backward.py, 3x the autocast peer's error for every one of the 148 parameters, by
+    relative L2 and by max-abs) at OpenAI's weights rounded to FP16, over the same 3 windows at
+    each shape. There attention's scores are far wider than at the init, and at the scale 2^16
+    the peer's own wte gradient overflows FP16 (a few values a window). So the loss scale backs
+    off as GradScaler would: per window it is the first 2^k, k from 16 down to 14, at which every
+    peer gradient is finite, and the test fails if there is none (a smaller scale would gate
+    Flint against a noisier peer). One scale serves a window's reference, peer and Flint (Flint's
+    forward pass takes it divided by the rows), so all three are gradients of the same loss and
+    nothing is unscaled. Windows can settle at different scales, and the max-abs bound is the
+    peer's worst over the windows, so every window's gradients are then multiplied by 2^(16-k),
+    exactly, to compare them in the same units. Measured: the scale settles at 2^15 or 2^14, and
+    the worst gate margin (the larger of the relative L2 and the max-abs, Flint's worst over the
+    windows against the peer's, of 3 allowed) is 2.02 on the 2080 Ti and 1.93 on the laptop.
+    blocks.4.ln_1.weight is the parameter that FP16 attention scores stress most.
+
 Skipped when the weights are absent (the tests needing the shard skip when it is), and always
 under the sanitizer. One shape lives on the GPU at a time: an FP32 reference at 1,024 tokens
 fits the laptop only at batch 1."""
@@ -62,6 +78,15 @@ from test_gpt2 import (  # also puts scripts/ on sys.path
     sha256_of,
     state_of,
 )
+from test_gpt2_backward import (
+    backward_config,
+    check_gradients,
+    forward_backward,
+    gradient_errors,
+    ratio,
+    read_gradients,
+    torch_gradients,
+)
 
 CHECKPOINT = "gpt2-124M/model.safetensors"
 CHECKPOINT_BYTES = 548_105_171
@@ -76,6 +101,11 @@ TORCH_VS_HF_MAX_ABS_OF_MAX = 1e-4
 TORCH_VS_HF_LOSS = 1e-5
 LOSS_RANGE = (2.5, 5.0)
 MIN_TOP1 = 0.95
+# The gradient gate's loss scale backs off from 2^16 to at most 2^14 (see the module docstring):
+# measured, it settles at 2^15 or 2^14 on both GPUs.
+FIRST_LOG2_SCALE, LAST_LOG2_SCALE = 16, 14
+# The parameter that FP16 attention scores stress most, whose margin the gradient gate prints.
+MOST_STRESSED = "blocks.4.ln_1.weight"
 
 
 @pytest.fixture(autouse=True)
@@ -375,3 +405,87 @@ def test_padded_dlogits_are_zero_and_a_second_pass_gives_the_same_bits(flint, op
     assert all_equal(int_view(first.logits)[:, VOCAB:], 0), "logits past vocab are not +0"
     assert torch.isfinite(first.dlogits.float()).all() and torch.isfinite(first.logits[:, :VOCAB].float()).all()
     assert_same_outputs(first, second, "second pass on real weights")
+
+
+# -- Flint's gradients are GPT-2's ---------------------------------------------------------------
+
+
+def nonfinite_counts(grads):
+    """[(name, how many values aren't finite)] of the gradients that have any."""
+    counts = [(name, int((~torch.isfinite(g)).sum())) for name, g in grads.items()]
+    return [(name, count) for name, count in counts if count]
+
+
+def peer_gradients_at_a_finite_scale(model, batch, sequences):
+    """(log2 of the loss scale, the peer's gradients at it, the rejected scales), as GradScaler
+    would settle: the first 2^k, k from 16 down to 14, at which every peer gradient is finite
+    (it would skip the step and halve the scale otherwise). Each rejected scale comes with its
+    non-finite counts by parameter. If there is none, the test fails saying so."""
+    rejected = []
+    for log2 in range(FIRST_LOG2_SCALE, LAST_LOG2_SCALE - 1, -1):
+        peer = torch_gradients(model, [batch], sequences, peer=True, loss_scale=2.0**log2)
+        bad = nonfinite_counts(peer)
+        if not bad:
+            return log2, peer, rejected
+        rejected.append((log2, bad))
+        del peer
+        free_memory()
+    pytest.fail(f"the peer's gradients are not finite at any scale from 2^{FIRST_LOG2_SCALE} down to "
+                f"2^{LAST_LOG2_SCALE}: {rejected}")  # fmt: skip
+
+
+def gate_margins(by_parameter):
+    """By parameter, (relative L2, max-abs): the worst over the windows of Flint's error over the
+    worst over the windows of the peer's. The gate allows 3 of either, floors aside."""
+    return {
+        name: (ratio(max(f.rel_l2 for f, _ in per_window), max(p.rel_l2 for _, p in per_window)),
+               ratio(max(f.max_abs for f, _ in per_window), max(p.max_abs for _, p in per_window)))
+        for name, per_window in by_parameter.items()
+    }  # fmt: skip
+
+
+@pytest.mark.parametrize("sequences, length", SHAPES, ids=lambda v: str(v))
+def test_flint_gradients_pass_the_gate_at_openais_weights(flint, openai_model, sequences, length):
+    # The done rule's form, as for the forward pass: identical FP16-representable weights for the
+    # FP32 reference, the autocast peer and Flint, over real text. Each window has one loss
+    # scale, backed off until the peer's gradients are finite, shared by all three.
+    model = rounded_to_fp16(openai_model)
+    config = backward_config(GPT2, sequences, length)
+    by_parameter, scales = {}, []
+    for window in gate.SEEDS:
+        batch = window_batch(sequences, length, window)
+        log2, peer, rejected = peer_gradients_at_a_finite_scale(model, batch, sequences)
+        scale = 2.0**log2
+        reference = torch_gradients(model, [batch], sequences, peer=False, loss_scale=scale)
+        free_memory()
+        scales.append(log2)
+        print(f"OPENAI gradients {sequences}x{length} window {window}: loss scale 2^{log2}" + "".join(
+            f"; rejected 2^{k}, non-finite: " + ", ".join(f"{name} {count}" for name, count in bad)
+            for k, bad in rejected))  # fmt: skip
+        # Torch's gradients are on the CPU and its autograd memory is freed before Flint's model
+        # is created: the laptop's 6 GiB cannot hold both.
+        with Gpt2(flint, config) as m:
+            m.load(state_of(model))
+            forward_backward(m, batch, scale / batch.rows)
+            flint_grads = {name: g.cpu() for name, g in read_gradients(m).items()}
+        free_memory()
+        flint_grads = {name: g.cuda() for name, g in flint_grads.items()}
+        # In 2^16's units, so that the max-abs bound, the peer's worst over the windows, doesn't
+        # mix scales. Multiplying by 2 or 4 is exact.
+        unit = 2.0 ** (FIRST_LOG2_SCALE - log2)
+        for grads in (reference, peer, flint_grads):
+            for name in grads:
+                grads[name] = grads[name] * unit
+        for name, errors in gradient_errors(flint_grads, reference, peer).items():
+            by_parameter.setdefault(name, []).append(errors)
+        del batch, peer, reference, flint_grads
+        free_memory()
+    margins = gate_margins(by_parameter)
+    worst = max(margins, key=lambda name: max(margins[name]))
+    print(f"OPENAI gradients {sequences}x{length} gate margin (of {gate.GRADIENT_FACTOR:g}): {MOST_STRESSED} rel_l2 "
+          f"{margins[MOST_STRESSED][0]:.3g} max_abs {margins[MOST_STRESSED][1]:.3g}; worst of {len(margins)} parameters "
+          f"{worst} rel_l2 {margins[worst][0]:.3g} max_abs {margins[worst][1]:.3g}")  # fmt: skip
+    label = (f"OpenAI weights rounded to FP16 {sequences}x{length}, real tokens, loss scales "
+             + ", ".join(f"2^{k}" for k in scales))  # fmt: skip
+    check_gradients(label, by_parameter, len(gate.SEEDS))
+    del model
