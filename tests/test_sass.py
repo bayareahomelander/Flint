@@ -506,6 +506,42 @@ def test_layernorm_backward_kernels_have_no_spills_atomics_or_flushing_and_read_
         assert any(op.startswith("STS") for op in opcodes(body)), name
 
 
+# The gradient norm's two kernels, by the length-prefixed names in their mangled symbols (both in
+# flint's anonymous namespace, neither a template): the first pass reads the tensors in 16-byte
+# loads (through __ldg, so they are LDG.E.128.CONSTANT) and both sum in FP64.
+GRADIENT_NORM_KERNELS = [
+    pytest.param("22gradient_norm_partials", id="partials"),
+    pytest.param("20gradient_norm_finish", id="finish"),
+]
+FP64_ADDS = {"DFMA", "DADD"}
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+@pytest.mark.parametrize("symbol", GRADIENT_NORM_KERNELS)
+def test_gradient_norm_kernels_have_no_spills_atomics_or_flushing_and_sum_in_fp64(arch, symbol):
+    kernels = {name: body for name, body in library_functions(arch).items() if symbol in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    # FP32 subnormals must reach FP64 unflushed (the bits are compared with an emulation that has
+    # them), so no instruction of the kernel may flush to zero. Not even the square root's slow path
+    # after the last EXIT has one, so unlike LayerNorm's backward there is no exception to make.
+    assert ".FTZ" not in body, name
+    assert not flushing_instructions(body), name
+    # The sums are in FP64, and the extraction finds something: the block reduction's shuffles and
+    # the results' stores.
+    assert any(op.split(".")[0] in FP64_ADDS for op in opcodes(body)), name
+    assert any(op.startswith("SHFL") for op in opcodes(body)), name
+    assert any(op.startswith("STG") for op in opcodes(body)), name
+    if symbol.startswith("22"):
+        # The first pass loads a group of 4 values at a time when the tensor is 16-byte aligned,
+        # and squares them with fused multiply-adds.
+        assert "LDG.E.128" in body, name
+        assert any(op.split(".")[0] == "DFMA" for op in opcodes(body)), name
+    else:
+        assert "DSQRT" in body or "MUFU.RSQ64H" in body, name
+
+
 # -- The batched GEMMs --------------------------------------------------------
 
 # Each batched kernel with the plain kernel of its layout, by the length-prefixed

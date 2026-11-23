@@ -3,7 +3,8 @@
 // also guard the assembly: a wrong size here fails rather than running. The one exception is
 // a cudaMemsetAsync in the backward pass, which zeroes wpe's gradient rows from length to
 // block_size: no public function zeroes memory, and the embedding's kernel doesn't write those
-// rows.
+// rows. flint_gpt2_create with backward also does one host-to-device cudaMemcpy, of the table of
+// gradients that the gradient norm reads, and waits for the GPU after it.
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -150,12 +151,18 @@ struct flint_gpt2 {
     void* dq = nullptr;
     void* dk = nullptr;
     void* dv = nullptr;
-    // One workspace for the bias gradient and the LayerNorm and embedding backward passes,
-    // and one for flint_gemm_tn, each the largest any of its calls needs.
+    // One workspace for the bias gradient, the LayerNorm and embedding backward passes and the
+    // gradient norm, and one for flint_gemm_tn, each the largest any of its calls needs.
     void* workspace = nullptr;
     size_t workspace_bytes = 0;
     void* tn_workspace = nullptr;
     size_t tn_workspace_bytes = 0;
+    // The gradient norm's input and results, only with backward: the table of every gradient
+    // (a flint_tensor each, in the order of parameters), the FP64 norm and the uint64 count of
+    // values that are not finite.
+    void* gradient_table = nullptr;
+    void* gradient_norm = nullptr;
+    void* gradient_nonfinite = nullptr;
 
     std::vector<Slot> slots;
     std::vector<void*> allocations;
@@ -271,8 +278,9 @@ Linear add_linear(flint_gpt2& m, const std::string& name, size_t out, size_t in)
 }
 
 // The workspaces the backward pass's calls need: the largest of the bias gradient's (at each
-// linear layer's width), LayerNorm's and the embedding's, and the largest of flint_gemm_tn's
-// over the weight gradients' shapes. The last asks the current GPU for its SM count.
+// linear layer's width), LayerNorm's, the embedding's and the gradient norm's, and the largest
+// of flint_gemm_tn's over the weight gradients' shapes. The last asks the current GPU for its SM
+// count.
 flint_status size_workspaces(flint_gpt2& m) {
     const flint_gpt2_config& c = m.config;
     const size_t rows = m.rows;
@@ -287,6 +295,8 @@ flint_status size_workspaces(flint_gpt2& m) {
     needed = std::max(needed, bytes);
     FLINT_RETURN_IF_FAILED(flint_embedding_backward_workspace(c.sequences, c.length,
                                                               c.padded_vocab, width, &bytes));
+    needed = std::max(needed, bytes);
+    FLINT_RETURN_IF_FAILED(flint_gradient_norm_workspace(&bytes));
     m.workspace_bytes = std::max(needed, bytes);
 
     // (m, n) of each weight gradient, all with k = rows: wte, then a block's c_attn, its
@@ -307,11 +317,11 @@ flint_status size_workspaces(flint_gpt2& m) {
 
 // Lays the model out: its parameters in the order of PyTorch's named_parameters, with
 // backward their gradients, then the compute copies, the activations, the backward pass's
-// scratch and the outputs. It allocates nothing, so flint_gpt2_bytes and flint_gpt2_create
-// share it; with backward it asks the GPU for flint_gemm_tn's workspace size. Without
-// backward, the activations are one set (the residual stream two buffers, between which
-// it ping-pongs), in the order the model has always had. The limits in check_config keep
-// every size here far below 2^64.
+// scratch, the gradient norm's table and results, and the outputs. It allocates nothing, so
+// flint_gpt2_bytes and flint_gpt2_create share it; with backward it asks the GPU for
+// flint_gemm_tn's workspace size. Without backward, the activations are one set (the residual
+// stream two buffers, between which it ping-pongs), in the order the model has always had. The
+// limits in check_config keep every size here far below 2^64.
 flint_status lay_out(flint_gpt2& m) {
     const flint_gpt2_config& c = m.config;
     const bool backward = c.backward != 0;
@@ -392,6 +402,9 @@ flint_status lay_out(flint_gpt2& m) {
         m.slots.push_back({&m.dv, heads_bytes});
         m.slots.push_back({&m.workspace, m.workspace_bytes});
         m.slots.push_back({&m.tn_workspace, m.tn_workspace_bytes});
+        m.slots.push_back({&m.gradient_table, m.parameters.size() * sizeof(flint_tensor)});
+        m.slots.push_back({&m.gradient_norm, sizeof(double)});
+        m.slots.push_back({&m.gradient_nonfinite, sizeof(unsigned long long)});
     } else {
         // Block 0's set, which link_activations hands to every block.
         Activations& a = m.blocks[0].saved;
@@ -449,6 +462,25 @@ size_t total_bytes(const flint_gpt2& m) {
         total += rounded_up(slot.bytes);
     }
     return total;
+}
+
+// With backward, writes the table that the gradient norm reads: every master weight's gradient
+// and its value count, in the order of parameters. The pageable host-to-device copy may return
+// before it lands, and a kernel on a non-blocking stream isn't ordered after it, so this waits
+// for the GPU.
+flint_status fill_gradient_table(flint_gpt2& m) {
+    if (m.config.backward == 0) {
+        return FLINT_OK;
+    }
+    std::vector<flint_tensor> table;
+    table.reserve(m.parameters.size());
+    for (const Parameter& parameter : m.parameters) {
+        table.push_back({parameter.gradient, parameter.rows * parameter.cols});
+    }
+    FLINT_CUDA_CHECK(cudaMemcpy(m.gradient_table, table.data(), table.size() * sizeof(flint_tensor),
+                                cudaMemcpyHostToDevice));
+    FLINT_CUDA_CHECK(cudaDeviceSynchronize());
+    return FLINT_OK;
 }
 
 flint_status allocate(flint_gpt2& m) {
@@ -651,6 +683,7 @@ flint_status flint_gpt2_create(const flint_gpt2_config* config, flint_gpt2** mod
         // The destructor frees whatever a failed allocation left behind.
         FLINT_RETURN_IF_FAILED(allocate(*m));
         link_activations(*m);
+        FLINT_RETURN_IF_FAILED(fill_gradient_table(*m));
         *model = m.release();
     } catch (const std::bad_alloc&) {
         return flint::fail(FLINT_ERROR_CUDA, "%s: out of host memory", name);
@@ -808,6 +841,42 @@ flint_status flint_gpt2_backward(flint_gpt2* model, const void* tokens, int accu
     if (accumulate == 0 && c.block_size > c.length) {
         char* const unseen = static_cast<char*>(m.wpe->gradient) + c.length * width * 4;
         FLINT_CUDA_CHECK(cudaMemsetAsync(unseen, 0, (c.block_size - c.length) * width * 4, stream));
+    }
+    return FLINT_OK;
+}
+
+namespace {
+
+// flint_gpt2_gradient_norm and its outputs need a model with backward.
+flint_status check_gradient_norm_model(const char* name, const flint_gpt2* model) {
+    if (model == nullptr) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: model is null", name);
+    }
+    if (model->config.backward == 0) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
+                           "%s: the model was created without backward, so it has no gradients",
+                           name);
+    }
+    return FLINT_OK;
+}
+
+}  // namespace
+
+flint_status flint_gpt2_gradient_norm(flint_gpt2* model, flint_stream stream) {
+    FLINT_RETURN_IF_FAILED(check_gradient_norm_model("flint_gpt2_gradient_norm", model));
+    const flint_gpt2& m = *model;
+    return flint_gradient_norm(m.gradient_norm, m.gradient_nonfinite, m.gradient_table,
+                               m.parameters.size(), m.workspace, m.workspace_bytes, stream);
+}
+
+flint_status flint_gpt2_gradient_norm_outputs(const flint_gpt2* model, const void** norm,
+                                              const void** nonfinite) {
+    FLINT_RETURN_IF_FAILED(check_gradient_norm_model("flint_gpt2_gradient_norm_outputs", model));
+    if (norm != nullptr) {
+        *norm = model->gradient_norm;
+    }
+    if (nonfinite != nullptr) {
+        *nonfinite = model->gradient_nonfinite;
     }
     return FLINT_OK;
 }

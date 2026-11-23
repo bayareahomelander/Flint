@@ -8,6 +8,7 @@ add_library(flint SHARED
   api/embedding.cpp
   api/gemm.cpp
   api/gpt2.cpp
+  api/gradient_norm.cpp
   api/heads.cpp
   api/layernorm.cpp
   api/softmax.cpp
@@ -21,6 +22,7 @@ add_library(flint SHARED
   kernels/embedding.cu
   kernels/embedding_backward.cu
   kernels/gemm.cu
+  kernels/gradient_norm.cu
   kernels/heads.cu
   kernels/layernorm.cu
   kernels/layernorm_backward.cu

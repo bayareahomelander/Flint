@@ -44,6 +44,16 @@ The tokens are windows of real FineWeb-Edu text, 3 each at (1, 1024), (2, 256) a
     the worst gate margin (the larger of the relative L2 and the max-abs, Flint's worst over the
     windows against the peer's, of 3 allowed) is 2.02 on the 2080 Ti and 1.93 on the laptop.
     blocks.4.ln_1.weight is the parameter that FP16 attention scores stress most.
+  - Flint's gradient norm (flint_gpt2_gradient_norm, D31) is right at those gradients too: the
+    count of non-finite values is 0, and its norm is within 1e-12 (relative) of the FP64 norm of
+    the gradients as read back. The norm is also printed against the FP64 norms of the FP32
+    reference's and the autocast peer's gradients (in 2^16's units, like the gradients), with the
+    ratio of Flint's error to the peer's, but not gated: a norm's error is only the part of the
+    gradients' error along the gradient, so a peer whose error happens to lie across it gets a
+    small norm error, and the ratio over 3 windows is noise that the per-parameter gates don't
+    bound. On the 2080 Ti at 8 x 64, Flint's worst norm error was 3.6x the peer's by max-abs
+    (627.7 against 174.9) while every parameter passed its gate; Flint's norms are the same bits on
+    both GPUs, and only the peer's differ (decided with the owner, 2026-11-22).
 
 Skipped when the weights are absent (the tests needing the shard skip when it is), and always
 under the sanitizer. One shape lives on the GPU at a time: an FP32 reference at 1,024 tokens
@@ -51,6 +61,7 @@ fits the laptop only at batch 1."""
 
 import copy
 import gc
+import math
 
 import pytest
 import torch
@@ -434,6 +445,17 @@ def peer_gradients_at_a_finite_scale(model, batch, sequences):
                 f"2^{LAST_LOG2_SCALE}: {rejected}")  # fmt: skip
 
 
+def fp64_norm(grads):
+    """The L2 norm of every value of the gradients (by name, any device) taken as one vector, in
+    FP64 from the FP32 (or FP64) values."""
+    return math.sqrt(sum(float(g.double().square().sum()) for g in grads.values()))
+
+
+def scalar_errors(value, reference):
+    """gate.errors of one number against its reference (a relative error and a max-abs one)."""
+    return gate.errors(torch.tensor([value], dtype=torch.float64), torch.tensor([reference], dtype=torch.float64))
+
+
 def gate_margins(by_parameter):
     """By parameter, (relative L2, max-abs): the worst over the windows of Flint's error over the
     worst over the windows of the peer's. The gate allows 3 of either, floors aside."""
@@ -451,7 +473,7 @@ def test_flint_gradients_pass_the_gate_at_openais_weights(flint, openai_model, s
     # scale, backed off until the peer's gradients are finite, shared by all three.
     model = rounded_to_fp16(openai_model)
     config = backward_config(GPT2, sequences, length)
-    by_parameter, scales = {}, []
+    by_parameter, scales, norm_errors = {}, [], []
     for window in gate.SEEDS:
         batch = window_batch(sequences, length, window)
         log2, peer, rejected = peer_gradients_at_a_finite_scale(model, batch, sequences)
@@ -467,6 +489,8 @@ def test_flint_gradients_pass_the_gate_at_openais_weights(flint, openai_model, s
         with Gpt2(flint, config) as m:
             m.load(state_of(model))
             forward_backward(m, batch, scale / batch.rows)
+            m.gradient_norm()
+            flint_norm, flint_count = m.read_gradient_norm()
             flint_grads = {name: g.cpu() for name, g in read_gradients(m).items()}
         free_memory()
         flint_grads = {name: g.cuda() for name, g in flint_grads.items()}
@@ -478,6 +502,19 @@ def test_flint_gradients_pass_the_gate_at_openais_weights(flint, openai_model, s
                 grads[name] = grads[name] * unit
         for name, errors in gradient_errors(flint_grads, reference, peer).items():
             by_parameter.setdefault(name, []).append(errors)
+        # The norm: Flint's own reduction against the FP64 norm of the gradients it left (asserted),
+        # then, in the gradients' units (the multiplication by unit is exact), its error and the
+        # peer's against the FP64 norm of the FP32 reference gradients (printed, not gated: see the
+        # module docstring).
+        flint_norm *= unit
+        read_back, ref_norm, peer_norm = fp64_norm(flint_grads), fp64_norm(reference), fp64_norm(peer)
+        assert flint_count == 0, f"window {window}: the gradient norm counts {flint_count} values that are not finite"
+        assert abs(flint_norm - read_back) <= 1e-12 * read_back, (
+            f"window {window}: flint's norm {flint_norm!r} against {read_back!r}, the FP64 norm of its gradients")  # fmt: skip
+        norm_errors.append((scalar_errors(flint_norm, ref_norm), scalar_errors(peer_norm, ref_norm)))
+        print(f"OPENAI gradients {sequences}x{length} window {window} gradient norm (2^16's units): flint {flint_norm!r} "
+              f"(FP64 norm of its gradients {read_back!r}, relative gap {abs(flint_norm - read_back) / read_back:.2e}), "
+              f"FP32 reference {ref_norm!r}, autocast {peer_norm!r}, count of non-finite values {flint_count}")  # fmt: skip
         del batch, peer, reference, flint_grads
         free_memory()
     margins = gate_margins(by_parameter)
@@ -485,6 +522,12 @@ def test_flint_gradients_pass_the_gate_at_openais_weights(flint, openai_model, s
     print(f"OPENAI gradients {sequences}x{length} gate margin (of {gate.GRADIENT_FACTOR:g}): {MOST_STRESSED} rel_l2 "
           f"{margins[MOST_STRESSED][0]:.3g} max_abs {margins[MOST_STRESSED][1]:.3g}; worst of {len(margins)} parameters "
           f"{worst} rel_l2 {margins[worst][0]:.3g} max_abs {margins[worst][1]:.3g}")  # fmt: skip
+    flint_norm_errors, peer_norm_errors = zip(*norm_errors, strict=True)
+    print(f"OPENAI gradients {sequences}x{length} norm against the FP32 reference's, not gated: Flint's worst error over "
+          f"the peer's worst, relative {ratio(max(f.rel_l2 for f in flint_norm_errors), max(p.rel_l2 for p in peer_norm_errors)):.3g} "
+          f"and max-abs {ratio(max(f.max_abs for f in flint_norm_errors), max(p.max_abs for p in peer_norm_errors)):.3g}; "
+          f"Flint's worst relative error {max(f.rel_l2 for f in flint_norm_errors):.3e}, "
+          f"autocast's {max(p.rel_l2 for p in peer_norm_errors):.3e}")  # fmt: skip
     label = (f"OpenAI weights rounded to FP16 {sequences}x{length}, real tokens, loss scales "
              + ", ".join(f"2^{k}" for k in scales))  # fmt: skip
     check_gradients(label, by_parameter, len(gate.SEEDS))

@@ -432,6 +432,42 @@ FLINT_API flint_status flint_softmax_cross_entropy(void* dlogits, void* row_loss
                                                    float scale, size_t rows, size_t vocab,
                                                    size_t cols, flint_stream stream);
 
+/* A tensor for flint_gradient_norm: count FP32 values, contiguous, in device memory. */
+typedef struct {
+    const void* data;
+    size_t count;
+} flint_tensor;
+
+/* The L2 norm of a list of FP32 tensors taken as one vector, and how many of their values
+ * are not finite, asynchronously on stream. *norm (one FP64 value in device memory) receives
+ * the square root of the sum of the squares of every value of the tensor_count tensors,
+ * each square and the sum in FP64, and *nonfinite (one uint64) receives how many of those
+ * values are inf or NaN, by isfinite. If that count is above 0, the norm isn't finite
+ * either. Finite values always give a finite norm: an FP32 value squares exactly in FP64,
+ * and the sum can't overflow it. Zero tensors, or only counts of 0, give +0 and 0. An
+ * optimizer step reads the norm to clip and the count to check the loss scale for overflow.
+ *
+ * tensors points to tensor_count flint_tensor entries in device memory, which the kernels
+ * read on the GPU, so the function can't check them: each data must be 4-byte aligned and
+ * hold count FP32 values in device memory (16-byte aligned data reads faster; the bits don't
+ * depend on alignment), and no tensor's values may overlap norm, nonfinite or the workspace.
+ * Tensors may overlap each other: a value listed twice counts twice. An entry with a count
+ * of 0 reads nothing. The sum is in a fixed order that depends only on the tensors' counts,
+ * with no atomics, so the result is deterministic and the same bits on every GPU.
+ *
+ * norm, nonfinite, tensors and workspace must be non-null and 16-byte aligned, and norm,
+ * nonfinite and the workspace must not overlap each other or the table of entries (the
+ * function checks the table's bytes, not the tensors' values). workspace_bytes must be at
+ * least flint_gradient_norm_workspace's value. The call uses the workspace until the stream
+ * has run it, so calls on other streams need their own. */
+FLINT_API flint_status flint_gradient_norm(void* norm, void* nonfinite, const void* tensors,
+                                           size_t tensor_count, void* workspace,
+                                           size_t workspace_bytes, flint_stream stream);
+
+/* The workspace flint_gradient_norm needs, in bytes, in *bytes: a fixed 16 KiB (1,024 FP64
+ * partial sums and 1,024 uint64 partial counts), whatever the tensors. */
+FLINT_API flint_status flint_gradient_norm_workspace(size_t* bytes);
+
 /* GPT-2's forward pass, from tokens to logits, each row's loss and the logits'
  * gradient, and its backward pass, from that gradient to every parameter's, through
  * the functions above. A model owns its weights and buffers. */
@@ -487,7 +523,9 @@ FLINT_API flint_status flint_gpt2_bytes(const flint_gpt2_config* config, size_t*
  * FLINT_ERROR_CUDA if the memory isn't there, with *model null and nothing kept.
  * With backward, flint_gemm_tn's workspace is sized for the current GPU's SM count,
  * so the backward pass must run on a GPU with the same count: on another,
- * flint_gemm_tn may need more workspace and fail. */
+ * flint_gemm_tn may need more workspace and fail. With backward, flint_gpt2_create also
+ * writes the table of gradients that flint_gpt2_gradient_norm reads, and waits for the GPU
+ * until the copy has landed. */
 FLINT_API flint_status flint_gpt2_create(const flint_gpt2_config* config, flint_gpt2** model);
 
 /* Frees a model and its memory. Anything still using them on a stream must have
@@ -558,6 +596,24 @@ FLINT_API flint_status flint_gpt2_backward(flint_gpt2* model, const void* tokens
  * gradients start uninitialized, until a flint_gpt2_backward with accumulate zero. */
 FLINT_API flint_status flint_gpt2_gradient(const flint_gpt2* model, size_t index,
                                            flint_gpt2_parameter_info* info);
+
+/* flint_gradient_norm over every master weight's gradient, in flint_gpt2_parameter's
+ * order, asynchronously on stream, as the gradients stand: a caller runs it after the last
+ * micro-batch's flint_gpt2_backward, on the same stream. The results go to the model's own
+ * two buffers, which flint_gpt2_gradient_norm_outputs locates: the FP64 norm and the uint64
+ * count of values that are not finite. Before the first call they are uninitialized. The
+ * call uses the model's workspace, so it must not run at the same time as another of the
+ * model's calls on a different stream. Fails with FLINT_ERROR_INVALID_ARGUMENT for a null
+ * model or one created without backward. */
+FLINT_API flint_status flint_gpt2_gradient_norm(flint_gpt2* model, flint_stream stream);
+
+/* Where flint_gpt2_gradient_norm leaves its results, in device memory: the FP64 norm and
+ * the uint64 count of values that are not finite. Either pointer may be null, if that
+ * result isn't wanted. Fails with FLINT_ERROR_INVALID_ARGUMENT for a null model or one
+ * created without backward. */
+FLINT_API flint_status flint_gpt2_gradient_norm_outputs(const flint_gpt2* model,
+                                                        const void** norm,
+                                                        const void** nonfinite);
 
 /* Where a forward pass leaves its outputs, in device memory, as
  * flint_softmax_cross_entropy describes them: logits and dlogits (sequences * length)

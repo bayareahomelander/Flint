@@ -176,6 +176,19 @@ SIGNATURES = {
         ctypes.c_int,
         [ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t)],
     ),
+    "flint_gradient_norm": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_gradient_norm_workspace": (ctypes.c_int, [ctypes.POINTER(ctypes.c_size_t)]),
     "flint_gemm_nt_batched": (
         ctypes.c_int,
         [
@@ -392,6 +405,11 @@ SIGNATURES = {
         ctypes.c_int,
         [ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(Gpt2ParameterInfo)],
     ),
+    "flint_gpt2_gradient_norm": (ctypes.c_int, [ctypes.c_void_p, ctypes.c_void_p]),
+    "flint_gpt2_gradient_norm_outputs": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_void_p)],
+    ),
     "flint_gpt2_outputs": (
         ctypes.c_int,
         [
@@ -428,6 +446,25 @@ def stream_handle(stream):
     if isinstance(stream, int):
         return stream
     return stream.cuda_stream
+
+
+def tensor_table(entries):
+    """The table flint_gradient_norm reads, in device memory: a CUDA int64 tensor of shape
+    (n, 2) holding [address, count] per row, which is the flint_tensor layout (16 bytes each).
+    Each entry is a contiguous FP32 CUDA tensor, or an (address, count) pair. With no entries it
+    returns a (1, 2) tensor of zeros, so the pointer is valid; pass a tensor_count of 0."""
+    rows = []
+    for entry in entries:
+        if isinstance(entry, torch.Tensor):
+            if entry.dtype != torch.float32 or not entry.is_cuda or not entry.is_contiguous():
+                raise ValueError("a tensor entry must be a contiguous FP32 CUDA tensor")
+            rows.append([entry.data_ptr(), entry.numel()])
+        else:
+            address, count = entry
+            rows.append([int(address), int(count)])
+    if not rows:
+        return torch.zeros((1, 2), dtype=torch.int64, device="cuda")
+    return torch.tensor(rows, dtype=torch.int64, device="cuda")
 
 
 def library_path() -> Path:
@@ -581,6 +618,30 @@ class Flint:
             self.lib.flint_bias_gradient(
                 pointer(dbias), pointer(dy), rows, cols, int(bool(accumulate)), pointer(workspace),
                 workspace_bytes, stream_handle(stream),
+            )
+        )
+
+    def gradient_norm_workspace(self) -> int:
+        """The bytes of workspace gradient_norm needs."""
+        size = ctypes.c_size_t()
+        self.check(self.lib.flint_gradient_norm_workspace(ctypes.byref(size)))
+        return size.value
+
+    def gradient_norm(
+        self, norm, nonfinite, tensors, tensor_count: int, workspace=None, workspace_bytes=None,
+        stream=None,
+    ) -> None:
+        """norm (one FP64) = the L2 norm of the tensor_count FP32 tensors that the table
+        tensors (see tensor_table) lists, and nonfinite (one uint64) = how many of their values
+        are inf or NaN. workspace_bytes defaults to a workspace tensor's size, or 0."""
+        if workspace_bytes is None:
+            workspace_bytes = 0 if workspace is None or isinstance(workspace, int) else (
+                workspace.numel() * workspace.element_size()
+            )
+        self.check(
+            self.lib.flint_gradient_norm(
+                pointer(norm), pointer(nonfinite), pointer(tensors), tensor_count,
+                pointer(workspace), workspace_bytes, stream_handle(stream),
             )
         )
 
@@ -842,6 +903,32 @@ class Gpt2:
                 self.handle, pointer(tokens), int(accumulate), stream_handle(stream)
             )
         )
+
+    def gradient_norm(self, stream=None) -> None:
+        """The norm of every gradient as they stand, and the count of their values that are not
+        finite, into the model's own two results (gradient_norm_outputs); the model must have
+        been created with backward."""
+        self.flint.check(
+            self.flint.lib.flint_gpt2_gradient_norm(self.handle, stream_handle(stream))
+        )
+
+    def gradient_norm_outputs(self) -> tuple:
+        """The device addresses of the gradient norm's FP64 norm and uint64 count."""
+        norm, nonfinite = ctypes.c_void_p(), ctypes.c_void_p()
+        self.flint.check(
+            self.flint.lib.flint_gpt2_gradient_norm_outputs(
+                self.handle, ctypes.byref(norm), ctypes.byref(nonfinite)
+            )
+        )
+        return norm.value, nonfinite.value
+
+    def read_gradient_norm(self, stream=None) -> tuple:
+        """(norm as a float, count as an int) that the last gradient_norm left. It runs nothing:
+        it synchronizes, then reads the two results."""
+        norm_at, nonfinite_at = self.gradient_norm_outputs()
+        norm = self.read(norm_at, (), torch.float64, 0, stream)
+        nonfinite = self.read(nonfinite_at, (), torch.int64, 0, stream)
+        return norm.item(), nonfinite.item()
 
     def outputs(self) -> tuple:
         """The device addresses of logits, dlogits and row_loss."""

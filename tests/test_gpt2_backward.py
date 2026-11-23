@@ -32,14 +32,16 @@ from Python, in the order the backward pass's spec gives, and every gradient mus
 assembly's bit for bit, at tiny shapes, in write mode and after a second batch in accumulate
 mode: that pins the arguments' order, the tied embedding's order ((old + output layer) +
 embedding) and the accumulate flags. Then the gradients are the parameters' in name, order and
-size; flint_gpt2_bytes equals an independent sum with backward; one allocation and
-separate_buffers give the same bits; a model with backward gives the forward pass's bits; run
-twice, with every gradient poisoned in between, is bitwise identical, wpe's unseen rows are +0
-in write mode and untouched in accumulate mode, and wte's padded rows are +0; backward changes
-neither the weights, the tokens, the outputs nor a later forward pass, and run twice after one
-forward pass gives the same bits; the gradients double with the scale; backward reads the last
-forward pass's activations and the FP16 copies of the weights, not the masters; two models, a
-create and destroy loop and a side stream behave. The argument errors and the new limits come
+size; flint_gpt2_bytes equals an independent sum with backward, which includes the gradient norm's
+table and two results (the two results lie inside it and overlap nothing; the table, which isn't
+exposed, is covered by the sum alone; their other tests are in test_gradient_norm.py);
+one allocation and separate_buffers give the same bits; a model with backward gives the forward
+pass's bits; run twice, with every gradient poisoned in between, is bitwise identical, wpe's unseen
+rows are +0 in write mode and untouched in accumulate mode, and wte's padded rows are +0;
+backward changes neither the weights, the tokens, the outputs nor a later forward pass, and run
+twice after one forward pass gives the same bits; the gradients double with the scale; backward
+reads the last forward pass's activations and the FP16 copies of the weights, not the masters; two
+models, a create and destroy loop and a side stream behave. The argument errors and the new limits come
 last. Under the sanitizer (scripts/sanitize.py) only the test_sanitized_* tests run: the tiny
 config with backward at small shapes, with separate_buffers so that memcheck sees each buffer's
 bounds, and once as one allocation."""
@@ -1032,10 +1034,14 @@ def expected_bytes_backward(flint, layers, heads, width, block_size, vocab, padd
     buffers += [heads_layout] * 3  # dq, dk, dv
     shared = [flint.bias_gradient_workspace(rows, cols) for cols in (width, 3 * width, 4 * width)]
     shared += [flint.layernorm_backward_workspace(rows, width),
-               flint.embedding_backward_workspace(sequences, length, padded_vocab, width)]  # fmt: skip
+               flint.embedding_backward_workspace(sequences, length, padded_vocab, width),
+               flint.gradient_norm_workspace()]  # fmt: skip
     tn = [flint.gemm_tn_workspace(m, n, rows) for m, n in
           ((padded_vocab, width), (3 * width, width), (width, width), (4 * width, width), (width, 4 * width))]  # fmt: skip
     buffers += [max(shared), max(tn)]
+    parameter_count = 2 + 12 * layers + 2
+    # the gradient norm's table (16 bytes, a flint_tensor, per parameter), its norm and its count
+    buffers += [parameter_count * 16, 8, 8]
     buffers += [rows * padded_vocab * 2] * 2 + [rows * 4]  # logits, dlogits, row_loss
     return sum(up(b) for b in buffers)
 
@@ -1079,8 +1085,13 @@ def test_buffers_with_backward_lie_inside_the_bytes_and_do_not_overlap(flint, fi
     with Gpt2(flint, config) as m:
         parameters, gradients = m.parameters(), m.gradients()
         logits_at, dlogits_at, loss_at = m.outputs()
+        norm_at, nonfinite_at = m.gradient_norm_outputs()
     regions = [(f"{n}", a, r * c * 4) for n, a, r, c in parameters]
     regions += [(f"gradient of {n}", a, r * c * 4) for n, a, r, c in gradients]
+    # The gradient norm's two results, an FP64 and a uint64 of 8 bytes each (its table of the
+    # gradients' addresses isn't exposed).
+    regions += [("gradient norm", norm_at, 8), ("gradient norm's count of non-finite values", nonfinite_at, 8)]
+    assert norm_at % 16 == 0 and nonfinite_at % 16 == 0, "the gradient norm's results aren't 16-byte aligned"
     regions += [("logits", logits_at, rows * padded * 2), ("dlogits", dlogits_at, rows * padded * 2),
                 ("row_loss", loss_at, rows * 4)]  # fmt: skip
     regions.sort(key=lambda r: r[1])
@@ -1090,7 +1101,8 @@ def test_buffers_with_backward_lie_inside_the_bytes_and_do_not_overlap(flint, fi
         return
     base = parameters[0][1]
     assert base % ALIGNMENT == 0 and min(r[1] for r in regions) == base
-    # The parameters come first, their gradients right after them, and the outputs last.
+    # The parameters come first, their gradients right after them, and the outputs last (the
+    # gradient norm's results lie before them, after the workspaces).
     assert gradients[0][1] == base + sum(up(r * c * 4) for _, _, r, c in parameters)
     assert loss_at + up(rows * 4) - base == total == bytes_of(flint, config)
     for name_, start, size in regions:

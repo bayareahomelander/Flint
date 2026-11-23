@@ -19,7 +19,10 @@ forward pass, then a second forward and backward pass with accumulate, so the to
 modes; the model then keeps every layer's activations, and takes about 14.6 GiB at 12 layers and
 16 x 1,024 against 5.0 GiB without. The child also reads every gradient back and exits nonzero
 unless all are finite and each parameter's has a nonzero value (wte's padded rows must be exactly
-+0), so a backward pass that ran but computed nothing can't pass. Each case must
++0), so a backward pass that ran but computed nothing can't pass. It then runs the model's
+gradient norm (flint_gpt2_gradient_norm) under the tools, and fails unless its count of
+non-finite values is 0 and its norm is finite, positive and within 1e-6 (relative) of the FP64
+norm of the gradients it read back. Each case must
 report zero errors (racecheck zero warnings too) and a finite loss. It is
 not part of precheck: it takes long, and the server's GPU is shared, so it refuses to start
 while another process uses the GPU or holds its memory, unless --allow-busy is given (the
@@ -58,6 +61,9 @@ PROBLEM_LINE = "sanitize_full: bad gradient: "
 # An untrained model's loss is near ln(50,257) = 10.8. This only shows that the pass ran to
 # its end on finite values; the tests' gates check what it computes.
 LOSS_RANGE = (9.0, 13.0)
+# How far the model's gradient norm may differ from the FP64 norm of the gradients read back,
+# relative to it. Both sum the same FP32 values squared in FP64, in different orders.
+NORM_TOLERANCE = 1e-6
 
 
 def gradient_problem(name, gradient, vocab):
@@ -78,11 +84,23 @@ def gradient_problem(name, gradient, vocab):
     return None
 
 
+def norm_problem(norm, nonfinite, expected):
+    """Why the model's gradient norm (norm, and nonfinite, its count of values that are not
+    finite) is not what finite gradients with this FP64 norm give, or None."""
+    if nonfinite != 0:
+        return f"the gradient norm counts {nonfinite} values that are not finite"
+    if not (math.isfinite(norm) and norm > 0.0):
+        return f"the gradient norm ({norm!r}) is not finite and positive"
+    if abs(norm - expected) > NORM_TOLERANCE * expected:
+        return f"the gradient norm ({norm!r}) differs from the gradients' FP64 norm ({expected!r})"
+    return None
+
+
 def child(layers, sequences, length, separate, backward):
     """One forward pass of GPT-2 with `layers` layers on random tokens, and with `backward` its
     backward pass, then a second forward and backward pass accumulating, printing the loss. With
-    backward it checks every gradient (gradient_problem) and returns 1, printing why, if one is
-    wrong; otherwise 0."""
+    backward it checks every gradient (gradient_problem) and the model's gradient norm
+    (norm_problem), and returns 1, printing why, if one is wrong; otherwise 0."""
     sys.path.insert(0, str(ROOT / "tests"))
     import dataclasses
 
@@ -117,12 +135,19 @@ def child(layers, sequences, length, separate, backward):
             m.backward(inputs, accumulate=True)
         loss = m.mean_loss()
         if backward:
+            m.gradient_norm()
+            norm, nonfinite = m.read_gradient_norm()
+            squares = 0.0
             for name, address, parameter_rows, cols in m.gradients():
                 gradient = m.read(address, (parameter_rows, cols), torch.float32)
                 problem = gradient_problem(name, gradient, cfg.vocab_size)
                 if problem:
                     problems.append(problem)
+                squares += gradient.double().pow(2).sum().item()
                 del gradient
+            problem = norm_problem(norm, nonfinite, math.sqrt(squares))
+            if problem:
+                problems.append(problem)
     torch.cuda.synchronize()
     print(f"{LOSS_LINE}{loss!r}", flush=True)
     for problem in problems:
