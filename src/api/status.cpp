@@ -12,6 +12,10 @@ const char* flint_status_string(flint_status status) {
         return "invalid argument";
     case FLINT_ERROR_CUDA:
         return "CUDA error";
+    case FLINT_ERROR_IO:
+        return "I/O error";
+    case FLINT_ERROR_FORMAT:
+        return "format error";
     default:
         return "unknown status";
     }

@@ -12,10 +12,14 @@ add_library(flint SHARED
   api/gradient_norm.cpp
   api/heads.cpp
   api/layernorm.cpp
+  api/safetensors.cpp
   api/softmax.cpp
   api/status.cpp
   common/checks.cpp
   common/error.cpp
+  io/file.cpp
+  io/json.cpp
+  io/safetensors.cpp
   kernels/adamw.cu
   kernels/bias_gradient.cu
   kernels/convert.cu

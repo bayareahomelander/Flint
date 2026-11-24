@@ -24,6 +24,8 @@ LIBRARY_NAME = "flint.dll" if sys.platform == "win32" else "libflint.so"
 OK = 0
 ERROR_INVALID_ARGUMENT = 1
 ERROR_CUDA = 2
+ERROR_IO = 3
+ERROR_FORMAT = 4
 
 
 class Gpt2Config(ctypes.Structure):
@@ -66,6 +68,20 @@ class Gpt2ParameterInfo(ctypes.Structure):
         ("data", ctypes.c_void_p),
         ("rows", ctypes.c_size_t),
         ("cols", ctypes.c_size_t),
+    ]
+
+
+class SafetensorsTensor(ctypes.Structure):
+    """flint_safetensors_tensor."""
+
+    _fields_ = [
+        ("name", ctypes.c_char_p),
+        ("dtype", ctypes.c_char_p),
+        ("rank", ctypes.c_size_t),
+        ("shape", ctypes.POINTER(ctypes.c_size_t)),
+        ("bits", ctypes.c_size_t),
+        ("offset", ctypes.c_size_t),
+        ("bytes", ctypes.c_size_t),
     ]
 
 
@@ -472,6 +488,62 @@ SIGNATURES = {
         ctypes.c_int,
         [ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_double)],
     ),
+    "flint_safetensors_open": (
+        ctypes.c_int,
+        [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p)],
+    ),
+    "flint_safetensors_close": (None, [ctypes.c_void_p]),
+    "flint_safetensors_tensor_count": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t)],
+    ),
+    "flint_safetensors_tensor_info": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(SafetensorsTensor)],
+    ),
+    "flint_safetensors_find": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_size_t)],
+    ),
+    "flint_safetensors_metadata_count": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t)],
+    ),
+    "flint_safetensors_metadata": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.POINTER(ctypes.c_char_p),
+        ],
+    ),
+    "flint_safetensors_metadata_find": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p)],
+    ),
+    "flint_safetensors_read": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p],
+    ),
+    "flint_safetensors_create": (
+        ctypes.c_int,
+        [
+            ctypes.c_char_p,
+            ctypes.POINTER(SafetensorsTensor),
+            ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_void_p),
+        ],
+    ),
+    "flint_safetensors_write": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t],
+    ),
+    "flint_safetensors_commit": (ctypes.c_int, [ctypes.c_void_p]),
+    "flint_safetensors_destroy": (None, [ctypes.c_void_p]),
 }
 
 
@@ -1140,3 +1212,225 @@ class Gpt2:
         self.flint.copy(out, address + first_element * size, out.numel() * size, stream)
         torch.cuda.synchronize()
         return out
+
+
+# --- safetensors -----------------------------------------------------------------------------
+
+
+def _text_bytes(value):
+    """A str as UTF-8 bytes; bytes pass through, so a test can hand over invalid UTF-8."""
+    return value if isinstance(value, bytes) else str(value).encode("utf-8")
+
+
+class SafetensorsInfo(tuple):
+    """One tensor of a safetensors file, as a tuple (name, dtype, shape, bits, offset, bytes)
+    with those fields also readable by name; name and dtype are str, shape is a tuple."""
+
+    _names = ("name", "dtype", "shape", "bits", "offset", "bytes")
+
+    def __new__(cls, name, dtype, shape, bits, offset, nbytes):
+        return super().__new__(cls, (name, dtype, tuple(shape), bits, offset, nbytes))
+
+    def __getattr__(self, field):
+        try:
+            return self[self._names.index(field)]
+        except ValueError:
+            raise AttributeError(field) from None
+
+
+def safetensors_open_status(flint, path) -> int:
+    """The status of flint_safetensors_open(path); a reader it opens is closed again."""
+    handle = ctypes.c_void_p()
+    status = flint.lib.flint_safetensors_open(_text_bytes(os.fspath(path)), ctypes.byref(handle))
+    if status == OK:
+        flint.lib.flint_safetensors_close(handle)
+    elif handle.value is not None:
+        raise AssertionError("flint_safetensors_open failed but returned a reader")
+    return status
+
+
+class SafetensorsReader:
+    """A flint_safetensors_reader, closed by close() or on leaving a with block. Opening raises
+    FlintError (with the status) when the library refuses the file."""
+
+    def __init__(self, flint: Flint, path):
+        self.flint = flint
+        self.path = os.fspath(path)
+        handle = ctypes.c_void_p()
+        status = flint.lib.flint_safetensors_open(_text_bytes(self.path), ctypes.byref(handle))
+        flint.check(status)
+        self.handle = handle.value
+
+    def close(self) -> None:
+        if self.handle is not None:
+            self.flint.lib.flint_safetensors_close(self.handle)
+            self.handle = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def count(self) -> int:
+        count = ctypes.c_size_t()
+        self.flint.check(
+            self.flint.lib.flint_safetensors_tensor_count(self.handle, ctypes.byref(count))
+        )
+        return count.value
+
+    def info(self, index: int) -> SafetensorsInfo:
+        info = SafetensorsTensor()
+        self.flint.check(
+            self.flint.lib.flint_safetensors_tensor_info(self.handle, index, ctypes.byref(info))
+        )
+        shape = [info.shape[d] for d in range(info.rank)]
+        return SafetensorsInfo(
+            info.name.decode("utf-8"), info.dtype.decode("ascii"), shape, info.bits, info.offset,
+            info.bytes,
+        )
+
+    def infos(self) -> list:
+        return [self.info(i) for i in range(self.count())]
+
+    def find(self, name) -> int:
+        index = ctypes.c_size_t()
+        self.flint.check(
+            self.flint.lib.flint_safetensors_find(
+                self.handle, _text_bytes(name), ctypes.byref(index)
+            )
+        )
+        return index.value
+
+    def metadata_count(self) -> int:
+        count = ctypes.c_size_t()
+        self.flint.check(
+            self.flint.lib.flint_safetensors_metadata_count(self.handle, ctypes.byref(count))
+        )
+        return count.value
+
+    def metadata_pair(self, index: int) -> tuple:
+        """(key, value) as UTF-8 bytes."""
+        key, value = ctypes.c_char_p(), ctypes.c_char_p()
+        self.flint.check(
+            self.flint.lib.flint_safetensors_metadata(
+                self.handle, index, ctypes.byref(key), ctypes.byref(value)
+            )
+        )
+        return key.value, value.value
+
+    def metadata_pairs(self) -> list:
+        """[(key, value)] as str, in the header's order."""
+        pairs = [self.metadata_pair(i) for i in range(self.metadata_count())]
+        return [(k.decode("utf-8"), v.decode("utf-8")) for k, v in pairs]
+
+    def metadata_find(self, key) -> bytes:
+        value = ctypes.c_char_p()
+        self.flint.check(
+            self.flint.lib.flint_safetensors_metadata_find(
+                self.handle, _text_bytes(key), ctypes.byref(value)
+            )
+        )
+        return value.value
+
+    def read(self, index: int, offset: int = 0, nbytes=None) -> bytes:
+        """Bytes [offset, offset + nbytes) of tensor index; the rest of it with nbytes None."""
+        if nbytes is None:
+            nbytes = self.info(index).bytes - offset
+        buffer = ctypes.create_string_buffer(nbytes) if nbytes else None
+        self.flint.check(
+            self.flint.lib.flint_safetensors_read(self.handle, index, offset, nbytes, buffer)
+        )
+        return buffer.raw if nbytes else b""
+
+
+def safetensors_declare(tensors, metadata=()):
+    """The arguments of flint_safetensors_create for tensors [(name, dtype, shape), ...] and
+    metadata [(key, value), ...] (str or bytes): (array, keys, values, keepalive). The array
+    holds the flint_safetensors_tensor entries; keepalive holds what they point to."""
+    array = (SafetensorsTensor * max(len(tensors), 1))()
+    keepalive = []
+    for slot, (name, dtype, shape) in zip(array, tensors):
+        name, dtype = _text_bytes(name), _text_bytes(dtype)
+        shape_array = (ctypes.c_size_t * max(len(shape), 1))(*shape)
+        keepalive.append((name, dtype, shape_array))
+        slot.name, slot.dtype, slot.rank = name, dtype, len(shape)
+        slot.shape = ctypes.cast(shape_array, ctypes.POINTER(ctypes.c_size_t))
+    keys = (ctypes.c_char_p * max(len(metadata), 1))(*[_text_bytes(k) for k, _ in metadata])
+    values = (ctypes.c_char_p * max(len(metadata), 1))(*[_text_bytes(v) for _, v in metadata])
+    return array, keys, values, keepalive
+
+
+def safetensors_create(flint, path, tensors, metadata=()):
+    """flint_safetensors_create without raising: (status, writer handle or None, array), the
+    array being the entries the call fills (see safetensors_declare)."""
+    array, keys, values, keepalive = safetensors_declare(tensors, metadata)
+    writer = ctypes.c_void_p()
+    status = flint.lib.flint_safetensors_create(
+        _text_bytes(os.fspath(path)), array, len(tensors), keys, values, len(metadata),
+        ctypes.byref(writer),
+    )
+    del keepalive
+    return status, writer.value, array
+
+
+class SafetensorsWriter:
+    """A flint_safetensors_writer, destroyed by destroy() or on leaving a with block (a writer
+    that was never committed then removes its temporary file). Creating raises FlintError."""
+
+    def __init__(self, flint: Flint, path, tensors, metadata=()):
+        self.flint = flint
+        self.path = os.fspath(path)
+        status, handle, self.array = safetensors_create(flint, path, tensors, metadata)
+        flint.check(status)
+        self.handle = handle
+        # What create filled in: (bits, offset, bytes) per tensor.
+        self.entries = [(t.bits, t.offset, t.bytes) for t in self.array[: len(tensors)]]
+
+    @property
+    def tmp_path(self) -> str:
+        return self.path + ".tmp"
+
+    def write(self, data) -> None:
+        self.flint.check(self.write_status(data))
+
+    def write_status(self, data) -> int:
+        return self.flint.lib.flint_safetensors_write(self.handle, data, len(data))
+
+    def commit(self) -> None:
+        self.flint.check(self.commit_status())
+
+    def commit_status(self) -> int:
+        return self.flint.lib.flint_safetensors_commit(self.handle)
+
+    def destroy(self) -> None:
+        if self.handle is not None:
+            self.flint.lib.flint_safetensors_destroy(self.handle)
+            self.handle = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.destroy()
+
+
+def write_safetensors(flint, path, tensors, metadata=(), chunks=None):
+    """Writes a whole file: tensors is [(name, dtype, shape, payload bytes), ...], in the
+    order they sit in the file. The payloads are written as one run, in one call or in pieces
+    of the sizes chunks lists (the last repeats; an int means pieces of that size). Returns
+    the entries create filled in, [(bits, offset, bytes), ...]."""
+    with SafetensorsWriter(flint, path, [t[:3] for t in tensors], metadata) as writer:
+        data = b"".join(t[3] for t in tensors)
+        if chunks is None:
+            writer.write(data)
+        else:
+            sizes = [chunks] if isinstance(chunks, int) else list(chunks)
+            position, step = 0, 0
+            while position < len(data):
+                size = sizes[min(step, len(sizes) - 1)]
+                writer.write(data[position : position + size])
+                position += size
+                step += 1
+        writer.commit()
+        return writer.entries

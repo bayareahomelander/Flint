@@ -28,7 +28,9 @@ typedef int flint_status;
 enum {
     FLINT_OK = 0,
     FLINT_ERROR_INVALID_ARGUMENT = 1,
-    FLINT_ERROR_CUDA = 2
+    FLINT_ERROR_CUDA = 2,
+    FLINT_ERROR_IO = 3,     /* the operating system failed a file call, or host memory ran out */
+    FLINT_ERROR_FORMAT = 4  /* a file isn't valid: flint_last_error names the rule broken */
 };
 
 /* The library version, such as "0.1.0". */
@@ -761,6 +763,148 @@ FLINT_API flint_status flint_gpt2_outputs(const flint_gpt2* model, const void** 
  * uninitialized, and after a failed one it's the last pass's values or a mix, so a
  * caller must check flint_gpt2_forward's status. */
 FLINT_API flint_status flint_gpt2_mean_loss(flint_gpt2* model, flint_stream stream, double* loss);
+
+/* safetensors files, read and written on the host, with no GPU involved. A file is the
+ * header's length n (8 bytes, little-endian), n bytes of UTF-8 JSON, and then the data. The JSON
+ * is one object that maps each tensor's name to {"dtype": ..., "shape": [...], "data_offsets":
+ * [begin, end]}, with the bytes [begin, end) of the data being the tensor's, and may also have
+ * the key "__metadata__", whose value is an object of strings (or null). Flint accepts exactly
+ * what Python's safetensors 0.8.0 accepts (RFC 8259's JSON, Rust's rule for UTF-8), except that
+ * it also refuses a name or metadata key given twice and a NUL in a name, a metadata key or a
+ * metadata value, since the strings it hands out are NUL-terminated.
+ *
+ * Flint is 64-bit only: shapes and offsets are 64-bit. Paths are UTF-8 (on Windows a path that
+ * isn't is FLINT_ERROR_INVALID_ARGUMENT) and may not be empty. A null pointer argument is
+ * FLINT_ERROR_INVALID_ARGUMENT, except where a function says it may be null. A reader or writer
+ * is used by one thread at a time. */
+
+/* The 22 dtypes, with the bits per element: "F4" (4); "F6_E2M3" and "F6_E3M2" (6); "BOOL", "U8",
+ * "I8", "F8_E5M2", "F8_E4M3", "F8_E8M0", "F8_E4M3FNUZ" and "F8_E5M2FNUZ" (8); "I16", "U16", "F16"
+ * and "BF16" (16); "I32", "U32" and "F32" (32); and "C64", "F64", "I64" and "U64" (64). A
+ * tensor's bytes are its element count times the bits, over 8, and the bits must make a whole
+ * number of bytes. */
+
+/* A tensor in a safetensors file. The reader fills every field. The writer reads name, dtype,
+ * rank and shape, and fills bits, offset and bytes. */
+typedef struct {
+    const char* name;      /* UTF-8, NUL-terminated */
+    const char* dtype;     /* one of the 22 names above, such as "F32" */
+    size_t rank;
+    const size_t* shape;   /* rank values; may be null when rank is 0 */
+    size_t bits;           /* bits per element: 4, 6, 8, 16, 32 or 64 */
+    size_t offset;         /* the tensor's first byte, from the data's start */
+    size_t bytes;          /* end - begin */
+} flint_safetensors_tensor;
+
+typedef struct flint_safetensors_reader flint_safetensors_reader;
+typedef struct flint_safetensors_writer flint_safetensors_writer;
+
+/* Opens a safetensors file and reads its whole header, checking every rule before it returns: the
+ * file holds at least 8 bytes; n is at most 100,000,000 and fits in the file; the header is valid
+ * UTF-8 and one JSON object; "__metadata__" is null or an object of strings; each other key is a
+ * tensor's name, mapping to an object with a "dtype" (a string, one of the 22 names), a "shape"
+ * (an array of unsigned integers) and "data_offsets" (an array of two), each once, and any other
+ * field is skipped, though its value must still be valid JSON; each tensor's end - begin is its
+ * dtype and shape's bytes, with the multiplications checked for overflow; and sorted by begin,
+ * the tensors cover the data exactly, with no hole, overlap or byte left over (a tensor of size 0
+ * fits wherever the next byte is). The header's order is kept, and the data's order doesn't
+ * matter. A broken rule is FLINT_ERROR_FORMAT, with a message that names the path, the rule and
+ * the tensor or key; an operating system failure (a missing file, no permission, a short read)
+ * or a failed host allocation is FLINT_ERROR_IO, with the call, the path and the system's
+ * message. On failure *reader is null and nothing stays open. The file stays open until
+ * flint_safetensors_close. */
+FLINT_API flint_status flint_safetensors_open(const char* path, flint_safetensors_reader** reader);
+
+/* Closes a reader and frees it, and everything it handed out. A null reader does nothing. */
+FLINT_API void flint_safetensors_close(flint_safetensors_reader* reader);
+
+/* How many tensors the file has, in *count. */
+FLINT_API flint_status flint_safetensors_tensor_count(const flint_safetensors_reader* reader,
+                                                      size_t* count);
+
+/* The index-th tensor, in the header's order, in *info, with every field filled. The strings and
+ * the shape array last as long as the reader. An index at or above the count is
+ * FLINT_ERROR_INVALID_ARGUMENT. */
+FLINT_API flint_status flint_safetensors_tensor_info(const flint_safetensors_reader* reader,
+                                                     size_t index, flint_safetensors_tensor* info);
+
+/* The index of the tensor named name (an exact comparison of bytes), in *index. A name that no
+ * tensor has is FLINT_ERROR_INVALID_ARGUMENT, and *index is left as it was. It takes constant
+ * time on average. */
+FLINT_API flint_status flint_safetensors_find(const flint_safetensors_reader* reader,
+                                              const char* name, size_t* index);
+
+/* How many pairs "__metadata__" has, in *count: 0 when the file has none, or a null one. */
+FLINT_API flint_status flint_safetensors_metadata_count(const flint_safetensors_reader* reader,
+                                                        size_t* count);
+
+/* The index-th metadata pair, in the header's order: its key and value, which last as long as
+ * the reader. An index at or above the count is FLINT_ERROR_INVALID_ARGUMENT. */
+FLINT_API flint_status flint_safetensors_metadata(const flint_safetensors_reader* reader,
+                                                  size_t index, const char** key,
+                                                  const char** value);
+
+/* The value of the metadata key key, in *value, which lasts as long as the reader. A key that
+ * isn't there is FLINT_ERROR_INVALID_ARGUMENT, and *value is left as it was. */
+FLINT_API flint_status flint_safetensors_metadata_find(const flint_safetensors_reader* reader,
+                                                       const char* key, const char** value);
+
+/* Copies the bytes [offset, offset + bytes) of the index-th tensor to dst in host memory, which
+ * may be null when bytes is 0. The range must lie within the tensor's own bytes, or the call is
+ * FLINT_ERROR_INVALID_ARGUMENT and reads nothing. It reads at a position, sharing no file
+ * pointer, in chunks of at most 1 GiB. If the file ends first (it shrank after it opened) the
+ * call is FLINT_ERROR_IO. A tensor larger than host memory can be read in pieces. */
+FLINT_API flint_status flint_safetensors_read(flint_safetensors_reader* reader, size_t index,
+                                              size_t offset, size_t bytes, void* dst);
+
+/* Starts writing a safetensors file, to path, given every tensor's name, dtype and shape up
+ * front. The tensors are laid out in the order given, each starting where the last ended, with
+ * no padding. The header is the compact JSON that serde_json writes: "__metadata__" first, when
+ * metadata_count is above 0 (the pairs keys[i], values[i], in order), and then the tensors in
+ * order, padded with spaces to a multiple of 8 bytes. The call writes the 8-byte length and the
+ * header to path + ".tmp", which it creates or empties, and on success fills each entry's bits,
+ * offset and bytes and returns the writer. tensors may be null when tensor_count is 0, and keys
+ * and values when metadata_count is 0. path itself isn't touched until
+ * flint_safetensors_commit.
+ *
+ * These are FLINT_ERROR_INVALID_ARGUMENT, found before any file is made: a null name, dtype, key
+ * or value, or a null shape with a rank above 0; a name, key or value that isn't valid UTF-8; a
+ * name that is "__metadata__"; two tensors with one name, or two pairs with one key; a dtype that
+ * isn't one of the 22 names; a shape whose size overflows 64 bits (each multiplication, left to
+ * right, counts) or isn't a whole number of bytes; a total size that overflows; and a padded
+ * header over 100,000,000 bytes. A file that can't be made is FLINT_ERROR_IO, as is a failed host
+ * allocation. On failure *writer is null, no entry is changed and no temporary file is left. */
+FLINT_API flint_status flint_safetensors_create(const char* path,
+                                                flint_safetensors_tensor* tensors,
+                                                size_t tensor_count, const char* const* keys,
+                                                const char* const* values, size_t metadata_count,
+                                                flint_safetensors_writer** writer);
+
+/* Appends the next bytes bytes of the data to the temporary file: the tensors' bytes in the
+ * order declared, where one call may span tensors or carry part of one (the writer only counts
+ * them). src may be null when bytes is 0. Each call goes straight to the operating system, in
+ * chunks of at most 1 GiB, with no buffer of Flint's. A write that would pass the declared total
+ * is FLINT_ERROR_INVALID_ARGUMENT and writes nothing, and so is a call after the commit. If the
+ * system fails the write, the call is FLINT_ERROR_IO, and the writer fails: every later write or
+ * commit is FLINT_ERROR_IO ("an earlier write failed"). */
+FLINT_API flint_status flint_safetensors_write(flint_safetensors_writer* writer, const void* src,
+                                               size_t bytes);
+
+/* Finishes the file: every declared byte must have been written, or the call is
+ * FLINT_ERROR_INVALID_ARGUMENT and the writer stays usable. Then it flushes the temporary file to
+ * disk and moves it over path, replacing any file there, and makes the move durable: on Windows
+ * FlushFileBuffers and MoveFileExW with replace and write-through; elsewhere fsync, rename, and
+ * an fsync of path's folder. On success path holds the whole file. If the system fails, the
+ * call is FLINT_ERROR_IO, the writer fails, and the temporary file is deleted, best effort. On
+ * Windows the move fails (FLINT_ERROR_IO) while any handle has path open, a reader's included,
+ * so close the readers of path before committing over it; on Linux the rename replaces it, and
+ * an open reader keeps reading the old file. On Linux, an I/O error after the rename (syncing
+ * the folder) leaves the new file at path, and the message says so. */
+FLINT_API flint_status flint_safetensors_commit(flint_safetensors_writer* writer);
+
+/* Frees a writer. If it wasn't committed, it also closes and deletes the temporary file, best
+ * effort, ignoring errors; path itself is never touched. A null writer does nothing. */
+FLINT_API void flint_safetensors_destroy(flint_safetensors_writer* writer);
 
 #ifdef __cplusplus
 }

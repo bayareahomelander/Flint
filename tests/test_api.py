@@ -33,8 +33,10 @@ def test_version(flint):
         (flint_lib.OK, "ok"),
         (flint_lib.ERROR_INVALID_ARGUMENT, "invalid argument"),
         (flint_lib.ERROR_CUDA, "CUDA error"),
+        (flint_lib.ERROR_IO, "I/O error"),
+        (flint_lib.ERROR_FORMAT, "format error"),
         (-1, "unknown status"),
-        (3, "unknown status"),
+        (5, "unknown status"),
         (2**31 - 1, "unknown status"),
     ],
 )
