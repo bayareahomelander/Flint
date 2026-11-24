@@ -542,6 +542,50 @@ def test_gradient_norm_kernels_have_no_spills_atomics_or_flushing_and_sum_in_fp6
         assert "DSQRT" in body or "MUFU.RSQ64H" in body, name
 
 
+# AdamW's two kernels, by the length-prefixed names in their mangled symbols (both in flint's
+# anonymous namespace, neither a template): the step's scalars, one thread, and the update of the
+# weights and moments, which reads and writes four arrays in 16-byte pieces and does the decay and
+# the moments in FP64 (fused AdamW's precision mix).
+ADAMW_KERNELS = [
+    pytest.param("13adamw_prepare", id="prepare"),
+    pytest.param("12adamw_update", id="update"),
+]
+FP64_ARITHMETIC = {"DMUL", "DADD", "DFMA"}
+
+
+@pytest.mark.parametrize("arch", ["sm_75", "sm_89"])
+@pytest.mark.parametrize("symbol", ADAMW_KERNELS)
+def test_adamw_kernels_have_no_spills_or_atomics_and_flush_nothing_but_the_square_roots_fast_path(arch, symbol):
+    kernels = {name: body for name, body in library_functions(arch).items() if symbol in name}
+    assert len(kernels) == 1, sorted(kernels)
+    (name, body), = kernels.items()
+    assert_no_spills_or_atomics(name, body)
+    ops = opcodes(body)
+    # The extraction finds something: the kernels load and store global memory and use FP64.
+    assert any(op.startswith("LDG") for op in ops), name
+    assert any(op.startswith("STG") for op in ops), name
+    assert any(op.split(".")[0] in FP64_ARITHMETIC for op in ops), name
+    if symbol.startswith("13"):
+        # The scalars have no flushing instruction at all.
+        assert ".FTZ" not in body, name
+        return
+    # Reads and writes of 16 bytes (the groups of 4 values of a 16-byte aligned entry).
+    assert any(op.startswith("LDG.E.128") for op in ops), name
+    assert any(op.startswith("STG.E.128") for op in ops), name
+    assert any(op.split(".")[0] in {"DMUL", "DADD"} for op in ops), name
+    # Moments are subnormal for tiny gradients and must stay exact, so nothing may flush: the
+    # bit-exact tests (test_adamw.py) with subnormal first and second moments are the evidence that
+    # nothing does. The .FTZ instructions outside the slow paths of the divisions and square roots
+    # (out of line, after the last EXIT) are all FMUL.FTZ: the inline fast path of __fsqrt_rn,
+    # x times MUFU.RSQ's result, then that result times 0.5, which a range check reaches only with
+    # normal inputs (a subnormal one takes the slow path, which is exact), found on both
+    # architectures. Any other flushing instruction there would be new.
+    flushing = flushing_instructions(body)
+    assert flushing, name
+    assert {sass_loop.PREDICATE.sub("", text).split()[0] for _, text in flushing} == {"FMUL.FTZ"}, flushing
+    assert "MUFU.RSQ" in ops, name
+
+
 # -- The batched GEMMs --------------------------------------------------------
 
 # Each batched kernel with the plain kernel of its layout, by the length-prefixed

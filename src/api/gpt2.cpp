@@ -4,7 +4,9 @@
 // a cudaMemsetAsync in the backward pass, which zeroes wpe's gradient rows from length to
 // block_size: no public function zeroes memory, and the embedding's kernel doesn't write those
 // rows. flint_gpt2_create with backward also does one host-to-device cudaMemcpy, of the table of
-// gradients that the gradient norm reads, and waits for the GPU after it.
+// gradients that the gradient norm reads (and with optimizer a second, of the table that AdamW
+// reads), and waits for the GPU after it. flint_gpt2_reset_optimizer is the other exception: a
+// cudaMemsetAsync per moment buffer, and a cudaMemcpyAsync of the optimizer's state from the host.
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -16,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/adamw_config.h"
 #include "common/checks.h"
 #include "common/error.h"
 
@@ -44,13 +47,17 @@ constexpr size_t kMaxBackwardPositionValues = 16776960;
 constexpr float kLayerNormEps = 1e-5f;
 
 // A master weight: FP32 in device memory, rows x cols, and with backward its gradient, the
-// same size.
+// same size, and with optimizer AdamW's two moments. decay says whether the weight decay applies:
+// to wte, wpe and the linear layers' weights, not to biases or LayerNorm's parameters.
 struct Parameter {
     std::string name;
     size_t rows;
     size_t cols;
+    bool decay;
     void* data;
     void* gradient;
+    void* exp_avg;
+    void* exp_avg_sq;
 };
 
 struct Norm {
@@ -151,8 +158,8 @@ struct flint_gpt2 {
     void* dq = nullptr;
     void* dk = nullptr;
     void* dv = nullptr;
-    // One workspace for the bias gradient, the LayerNorm and embedding backward passes and the
-    // gradient norm, and one for flint_gemm_tn, each the largest any of its calls needs.
+    // One workspace for the bias gradient, the LayerNorm and embedding backward passes, the
+    // gradient norm and AdamW, and one for flint_gemm_tn, each the largest any of its calls needs.
     void* workspace = nullptr;
     size_t workspace_bytes = 0;
     void* tn_workspace = nullptr;
@@ -163,6 +170,10 @@ struct flint_gpt2 {
     void* gradient_table = nullptr;
     void* gradient_norm = nullptr;
     void* gradient_nonfinite = nullptr;
+    // The optimizer's table and state, only with optimizer: a flint_adamw_tensor per parameter
+    // (in the order of parameters) and the flint_adamw_state.
+    void* adamw_table = nullptr;
+    void* adamw_state = nullptr;
 
     std::vector<Slot> slots;
     std::vector<void*> allocations;
@@ -241,6 +252,10 @@ flint_status check_config(const char* name, const flint_gpt2_config* config) {
                            "%s: sequences (%zu) x length (%zu) can be up to %zu rows", name,
                            c.sequences, c.length, kMaxRows);
     }
+    if (c.optimizer != 0 && c.backward == 0) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
+                           "%s: optimizer (%d) needs backward, which is 0", name, c.optimizer);
+    }
     if (c.backward != 0) {
         if (c.sequences > kMaxBackwardRows / c.length) {
             return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
@@ -257,8 +272,9 @@ flint_status check_config(const char* name, const flint_gpt2_config* config) {
     return FLINT_OK;
 }
 
-Parameter* add_parameter(flint_gpt2& m, std::string name, size_t rows, size_t cols) {
-    m.parameters.push_back({std::move(name), rows, cols, nullptr, nullptr});
+Parameter* add_parameter(flint_gpt2& m, std::string name, size_t rows, size_t cols, bool decay) {
+    m.parameters.push_back(
+        {std::move(name), rows, cols, decay, nullptr, nullptr, nullptr, nullptr});
     Parameter* parameter = &m.parameters.back();
     m.slots.push_back({&parameter->data, rows * cols * 4});
     return parameter;
@@ -266,21 +282,21 @@ Parameter* add_parameter(flint_gpt2& m, std::string name, size_t rows, size_t co
 
 Norm add_norm(flint_gpt2& m, const std::string& name) {
     const size_t width = m.config.width;
-    Parameter* weight = add_parameter(m, name + ".weight", 1, width);
-    Parameter* bias = add_parameter(m, name + ".bias", 1, width);
+    Parameter* weight = add_parameter(m, name + ".weight", 1, width, false);
+    Parameter* bias = add_parameter(m, name + ".bias", 1, width, false);
     return {weight, bias};
 }
 
 Linear add_linear(flint_gpt2& m, const std::string& name, size_t out, size_t in) {
-    Parameter* weight = add_parameter(m, name + ".weight", out, in);
-    Parameter* bias = add_parameter(m, name + ".bias", 1, out);
+    Parameter* weight = add_parameter(m, name + ".weight", out, in, true);
+    Parameter* bias = add_parameter(m, name + ".bias", 1, out, false);
     return {weight, bias, nullptr};
 }
 
 // The workspaces the backward pass's calls need: the largest of the bias gradient's (at each
-// linear layer's width), LayerNorm's, the embedding's and the gradient norm's, and the largest
-// of flint_gemm_tn's over the weight gradients' shapes. The last asks the current GPU for its SM
-// count.
+// linear layer's width), LayerNorm's, the embedding's, the gradient norm's and AdamW's, and the
+// largest of flint_gemm_tn's over the weight gradients' shapes. The last asks the current GPU for
+// its SM count.
 flint_status size_workspaces(flint_gpt2& m) {
     const flint_gpt2_config& c = m.config;
     const size_t rows = m.rows;
@@ -297,6 +313,8 @@ flint_status size_workspaces(flint_gpt2& m) {
                                                               c.padded_vocab, width, &bytes));
     needed = std::max(needed, bytes);
     FLINT_RETURN_IF_FAILED(flint_gradient_norm_workspace(&bytes));
+    needed = std::max(needed, bytes);
+    FLINT_RETURN_IF_FAILED(flint_adamw_workspace(&bytes));
     m.workspace_bytes = std::max(needed, bytes);
 
     // (m, n) of each weight gradient, all with k = rows: wte, then a block's c_attn, its
@@ -317,7 +335,8 @@ flint_status size_workspaces(flint_gpt2& m) {
 
 // Lays the model out: its parameters in the order of PyTorch's named_parameters, with
 // backward their gradients, then the compute copies, the activations, the backward pass's
-// scratch, the gradient norm's table and results, and the outputs. It allocates nothing, so
+// scratch, the gradient norm's table and results, with optimizer AdamW's moments, table and
+// state, and the outputs. It allocates nothing, so
 // flint_gpt2_bytes and flint_gpt2_create share it; with backward it asks the GPU for
 // flint_gemm_tn's workspace size. Without backward, the activations are one set (the residual
 // stream two buffers, between which it ping-pongs), in the order the model has always had. The
@@ -330,8 +349,8 @@ flint_status lay_out(flint_gpt2& m) {
     m.head_width = width / c.heads;
     m.head_batches = c.sequences * c.heads;
 
-    m.wte = add_parameter(m, "wte.weight", c.padded_vocab, width);
-    m.wpe = add_parameter(m, "wpe.weight", c.block_size, width);
+    m.wte = add_parameter(m, "wte.weight", c.padded_vocab, width, true);
+    m.wpe = add_parameter(m, "wpe.weight", c.block_size, width, true);
     m.blocks.resize(c.layers);
     for (size_t i = 0; i < c.layers; ++i) {
         const std::string prefix = "blocks." + std::to_string(i) + ".";
@@ -405,6 +424,16 @@ flint_status lay_out(flint_gpt2& m) {
         m.slots.push_back({&m.gradient_table, m.parameters.size() * sizeof(flint_tensor)});
         m.slots.push_back({&m.gradient_norm, sizeof(double)});
         m.slots.push_back({&m.gradient_nonfinite, sizeof(unsigned long long)});
+        if (c.optimizer != 0) {
+            for (Parameter& parameter : m.parameters) {
+                m.slots.push_back({&parameter.exp_avg, parameter.rows * parameter.cols * 4});
+            }
+            for (Parameter& parameter : m.parameters) {
+                m.slots.push_back({&parameter.exp_avg_sq, parameter.rows * parameter.cols * 4});
+            }
+            m.slots.push_back({&m.adamw_table, m.parameters.size() * sizeof(flint_adamw_tensor)});
+            m.slots.push_back({&m.adamw_state, sizeof(flint_adamw_state)});
+        }
     } else {
         // Block 0's set, which link_activations hands to every block.
         Activations& a = m.blocks[0].saved;
@@ -465,10 +494,11 @@ size_t total_bytes(const flint_gpt2& m) {
 }
 
 // With backward, writes the table that the gradient norm reads: every master weight's gradient
-// and its value count, in the order of parameters. The pageable host-to-device copy may return
-// before it lands, and a kernel on a non-blocking stream isn't ordered after it, so this waits
-// for the GPU.
-flint_status fill_gradient_table(flint_gpt2& m) {
+// and its value count, in the order of parameters, and with optimizer the table that AdamW
+// reads: a weight, its gradient, its two moments, its value count and whether it decays. The
+// pageable host-to-device copies may return before they land, and a kernel on a non-blocking
+// stream isn't ordered after them, so this waits for the GPU once, after both.
+flint_status fill_tables(flint_gpt2& m) {
     if (m.config.backward == 0) {
         return FLINT_OK;
     }
@@ -479,6 +509,18 @@ flint_status fill_gradient_table(flint_gpt2& m) {
     }
     FLINT_CUDA_CHECK(cudaMemcpy(m.gradient_table, table.data(), table.size() * sizeof(flint_tensor),
                                 cudaMemcpyHostToDevice));
+    if (m.config.optimizer != 0) {
+        std::vector<flint_adamw_tensor> adamw;
+        adamw.reserve(m.parameters.size());
+        for (const Parameter& parameter : m.parameters) {
+            adamw.push_back({parameter.data, parameter.gradient, parameter.exp_avg,
+                             parameter.exp_avg_sq, parameter.rows * parameter.cols,
+                             parameter.decay ? 1 : 0});
+        }
+        FLINT_CUDA_CHECK(cudaMemcpy(m.adamw_table, adamw.data(),
+                                    adamw.size() * sizeof(flint_adamw_tensor),
+                                    cudaMemcpyHostToDevice));
+    }
     FLINT_CUDA_CHECK(cudaDeviceSynchronize());
     return FLINT_OK;
 }
@@ -683,7 +725,7 @@ flint_status flint_gpt2_create(const flint_gpt2_config* config, flint_gpt2** mod
         // The destructor frees whatever a failed allocation left behind.
         FLINT_RETURN_IF_FAILED(allocate(*m));
         link_activations(*m);
-        FLINT_RETURN_IF_FAILED(fill_gradient_table(*m));
+        FLINT_RETURN_IF_FAILED(fill_tables(*m));
         *model = m.release();
     } catch (const std::bad_alloc&) {
         return flint::fail(FLINT_ERROR_CUDA, "%s: out of host memory", name);
@@ -878,6 +920,85 @@ flint_status flint_gpt2_gradient_norm_outputs(const flint_gpt2* model, const voi
     if (nonfinite != nullptr) {
         *nonfinite = model->gradient_nonfinite;
     }
+    return FLINT_OK;
+}
+
+namespace {
+
+// The optimizer's functions need a model with optimizer.
+flint_status check_optimizer_model(const char* name, const flint_gpt2* model) {
+    if (model == nullptr) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: model is null", name);
+    }
+    if (model->config.optimizer == 0) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
+                           "%s: the model was created without optimizer", name);
+    }
+    return FLINT_OK;
+}
+
+}  // namespace
+
+flint_status flint_gpt2_reset_optimizer(flint_gpt2* model, float initial_scale,
+                                        flint_stream stream) {
+    constexpr const char* name = "flint_gpt2_reset_optimizer";
+    FLINT_RETURN_IF_FAILED(check_optimizer_model(name, model));
+    if (!(std::isfinite(initial_scale) && initial_scale > 0.0f)) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT,
+                           "%s: initial_scale (%g) must be finite and positive", name,
+                           static_cast<double>(initial_scale));
+    }
+    for (const Parameter& parameter : model->parameters) {
+        const size_t bytes = parameter.rows * parameter.cols * 4;
+        FLINT_CUDA_CHECK(cudaMemsetAsync(parameter.exp_avg, 0, bytes, stream));
+        FLINT_CUDA_CHECK(cudaMemsetAsync(parameter.exp_avg_sq, 0, bytes, stream));
+    }
+    const flint_adamw_state state = {initial_scale, 0, 0, 0};
+    FLINT_CUDA_CHECK(cudaMemcpyAsync(model->adamw_state, &state, sizeof(state),
+                                     cudaMemcpyHostToDevice, stream));
+    return FLINT_OK;
+}
+
+flint_status flint_gpt2_step(flint_gpt2* model, const flint_adamw_config* config,
+                             flint_stream stream) {
+    constexpr const char* name = "flint_gpt2_step";
+    FLINT_RETURN_IF_FAILED(check_optimizer_model(name, model));
+    FLINT_RETURN_IF_FAILED(flint::check_adamw_config(name, config));
+    const flint_gpt2& m = *model;
+    FLINT_RETURN_IF_FAILED(flint_gpt2_gradient_norm(model, stream));
+    FLINT_RETURN_IF_FAILED(flint_adamw(m.adamw_table, m.parameters.size(), m.gradient_norm,
+                                       m.gradient_nonfinite, m.adamw_state, config, m.workspace,
+                                       m.workspace_bytes, stream));
+    return flint_gpt2_sync_weights(model, stream);
+}
+
+flint_status flint_gpt2_moments(const flint_gpt2* model, size_t index,
+                                flint_gpt2_parameter_info* exp_avg,
+                                flint_gpt2_parameter_info* exp_avg_sq) {
+    constexpr const char* name = "flint_gpt2_moments";
+    FLINT_RETURN_IF_FAILED(check_optimizer_model(name, model));
+    if (index >= model->parameters.size()) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: index (%zu) must be below %zu", name,
+                           index, model->parameters.size());
+    }
+    const Parameter& parameter = model->parameters[index];
+    if (exp_avg != nullptr) {
+        *exp_avg = {parameter.name.c_str(), parameter.exp_avg, parameter.rows, parameter.cols};
+    }
+    if (exp_avg_sq != nullptr) {
+        *exp_avg_sq = {parameter.name.c_str(), parameter.exp_avg_sq, parameter.rows,
+                       parameter.cols};
+    }
+    return FLINT_OK;
+}
+
+flint_status flint_gpt2_optimizer_state(const flint_gpt2* model, void** state) {
+    constexpr const char* name = "flint_gpt2_optimizer_state";
+    FLINT_RETURN_IF_FAILED(check_optimizer_model(name, model));
+    if (state == nullptr) {
+        return flint::fail(FLINT_ERROR_INVALID_ARGUMENT, "%s: state is null", name);
+    }
+    *state = model->adamw_state;
     return FLINT_OK;
 }
 

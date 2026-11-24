@@ -10,6 +10,7 @@ None for torch's current stream.
 
 import ctypes
 import os
+import struct
 import sys
 from pathlib import Path
 
@@ -39,6 +40,21 @@ class Gpt2Config(ctypes.Structure):
         ("length", ctypes.c_size_t),
         ("separate_buffers", ctypes.c_int),
         ("backward", ctypes.c_int),
+        ("optimizer", ctypes.c_int),
+    ]
+
+
+class AdamwConfig(ctypes.Structure):
+    """flint_adamw_config."""
+
+    _fields_ = [
+        ("lr", ctypes.c_double),
+        ("beta1", ctypes.c_double),
+        ("beta2", ctypes.c_double),
+        ("eps", ctypes.c_double),
+        ("weight_decay", ctypes.c_double),
+        ("max_norm", ctypes.c_double),
+        ("growth_interval", ctypes.c_longlong),
     ]
 
 
@@ -189,6 +205,21 @@ SIGNATURES = {
         ],
     ),
     "flint_gradient_norm_workspace": (ctypes.c_int, [ctypes.POINTER(ctypes.c_size_t)]),
+    "flint_adamw": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.c_void_p,
+            ctypes.POINTER(AdamwConfig),
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_void_p,
+        ],
+    ),
+    "flint_adamw_workspace": (ctypes.c_int, [ctypes.POINTER(ctypes.c_size_t)]),
     "flint_gemm_nt_batched": (
         ctypes.c_int,
         [
@@ -410,6 +441,24 @@ SIGNATURES = {
         ctypes.c_int,
         [ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_void_p)],
     ),
+    "flint_gpt2_reset_optimizer": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_float, ctypes.c_void_p],
+    ),
+    "flint_gpt2_step": (ctypes.c_int, [ctypes.c_void_p, ctypes.POINTER(AdamwConfig), ctypes.c_void_p]),
+    "flint_gpt2_moments": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.POINTER(Gpt2ParameterInfo),
+            ctypes.POINTER(Gpt2ParameterInfo),
+        ],
+    ),
+    "flint_gpt2_optimizer_state": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)],
+    ),
     "flint_gpt2_outputs": (
         ctypes.c_int,
         [
@@ -465,6 +514,67 @@ def tensor_table(entries):
     if not rows:
         return torch.zeros((1, 2), dtype=torch.int64, device="cuda")
     return torch.tensor(rows, dtype=torch.int64, device="cuda")
+
+
+def adamw_config(
+    lr, beta1=0.9, beta2=0.95, eps=1e-8, weight_decay=0.1, max_norm=1.0, growth_interval=2000
+) -> AdamwConfig:
+    """A flint_adamw_config; the defaults are PLAN.md's M4 settings."""
+    return AdamwConfig(lr, beta1, beta2, eps, weight_decay, max_norm, growth_interval)
+
+
+def adamw_table(entries):
+    """The table flint_adamw reads, in device memory: a CUDA int64 tensor of shape (n, 6)
+    holding the 48-byte flint_adamw_tensor layout per row: four addresses, the count, and the
+    decay int in the low 4 bytes of the last column (0 in the high 4). Each entry is
+    (param, grad, exp_avg, exp_avg_sq, decay), four contiguous FP32 CUDA tensors of one size each
+    and a bool, or (param_address, grad_address, exp_avg_address, exp_avg_sq_address, count,
+    decay), ints. With no entries it returns a (1, 6) tensor of zeros, so the pointer is valid;
+    pass a tensor_count of 0."""
+    rows = []
+    for entry in entries:
+        if isinstance(entry[0], torch.Tensor):
+            *arrays, decay = entry
+            for array in arrays:
+                if array.dtype != torch.float32 or not array.is_cuda or not array.is_contiguous():
+                    raise ValueError("an array must be a contiguous FP32 CUDA tensor")
+            count = arrays[0].numel()
+            if any(array.numel() != count for array in arrays):
+                raise ValueError("an entry's four arrays must have the same size")
+            rows.append([array.data_ptr() for array in arrays] + [count, int(bool(decay))])
+        else:
+            *addresses, count, decay = entry
+            rows.append([int(a) for a in addresses] + [int(count), int(bool(decay))])
+    if not rows:
+        return torch.zeros((1, 6), dtype=torch.int64, device="cuda")
+    return torch.tensor(rows, dtype=torch.int64, device="cuda")
+
+
+def adamw_state(scale=2.0**16, growth_tracker=0, step=0, skipped=0):
+    """A flint_adamw_state as a CUDA uint8 tensor of 24 bytes."""
+    packed = struct.pack("<fiqq", scale, growth_tracker, step, skipped)
+    return torch.frombuffer(bytearray(packed), dtype=torch.uint8).to("cuda")
+
+
+class _DeviceBytes:
+    """An address in device memory, as an object torch can wrap without copying."""
+
+    def __init__(self, address, nbytes):
+        self.__cuda_array_interface__ = {
+            "shape": (nbytes,), "typestr": "|u1", "data": (address, False), "version": 2,
+        }  # fmt: skip
+
+
+def read_adamw_state(address_or_tensor) -> dict:
+    """The four fields of a flint_adamw_state in device memory, given as a CUDA tensor or an
+    address. It synchronizes first."""
+    torch.cuda.synchronize()
+    if isinstance(address_or_tensor, torch.Tensor):
+        raw = address_or_tensor.contiguous().view(torch.uint8).cpu().numpy().tobytes()
+    else:
+        raw = torch.as_tensor(_DeviceBytes(address_or_tensor, 24), device="cuda").cpu().numpy().tobytes()
+    scale, growth_tracker, step, skipped = struct.unpack("<fiqq", raw[:24])
+    return {"scale": scale, "growth_tracker": growth_tracker, "step": step, "skipped": skipped}
 
 
 def library_path() -> Path:
@@ -642,6 +752,32 @@ class Flint:
             self.lib.flint_gradient_norm(
                 pointer(norm), pointer(nonfinite), pointer(tensors), tensor_count,
                 pointer(workspace), workspace_bytes, stream_handle(stream),
+            )
+        )
+
+    def adamw_workspace(self) -> int:
+        """The bytes of workspace adamw needs."""
+        size = ctypes.c_size_t()
+        self.check(self.lib.flint_adamw_workspace(ctypes.byref(size)))
+        return size.value
+
+    def adamw(
+        self, tensors, tensor_count: int, norm, nonfinite, state, config, workspace=None,
+        workspace_bytes=None, stream=None,
+    ) -> None:
+        """One optimizer step over the tensor_count entries that the table tensors (see
+        adamw_table) lists, reading norm (one FP64) and nonfinite (one uint64), which
+        gradient_norm left, and updating state (see adamw_state). config is an AdamwConfig, or
+        None for a null pointer. workspace_bytes defaults to a workspace tensor's size, or 0."""
+        if workspace_bytes is None:
+            workspace_bytes = 0 if workspace is None or isinstance(workspace, int) else (
+                workspace.numel() * workspace.element_size()
+            )
+        self.check(
+            self.lib.flint_adamw(
+                pointer(tensors), tensor_count, pointer(norm), pointer(nonfinite), pointer(state),
+                None if config is None else ctypes.byref(config), pointer(workspace),
+                workspace_bytes, stream_handle(stream),
             )
         )
 
@@ -929,6 +1065,55 @@ class Gpt2:
         norm = self.read(norm_at, (), torch.float64, 0, stream)
         nonfinite = self.read(nonfinite_at, (), torch.int64, 0, stream)
         return norm.item(), nonfinite.item()
+
+    def reset_optimizer(self, initial_scale=2.0**16, stream=None) -> None:
+        """Zeroes every moment and sets the optimizer's state to {initial_scale, 0, 0, 0}; the
+        model must have been created with optimizer."""
+        self.flint.check(
+            self.flint.lib.flint_gpt2_reset_optimizer(
+                self.handle, initial_scale, stream_handle(stream)
+            )
+        )
+
+    def step(self, config, stream=None) -> None:
+        """One optimizer step (an AdamwConfig) over the gradients as they stand, then
+        sync_weights; the model must have been created with optimizer."""
+        self.flint.check(
+            self.flint.lib.flint_gpt2_step(self.handle, ctypes.byref(config), stream_handle(stream))
+        )
+
+    def moments(self) -> list:
+        """(name, exp_avg_address, exp_avg_sq_address, rows, cols) of each master weight, in the
+        library's order."""
+        out = []
+        for i in range(self.flint.lib.flint_gpt2_parameter_count(self.handle)):
+            avg, avg_sq = Gpt2ParameterInfo(), Gpt2ParameterInfo()
+            self.flint.check(
+                self.flint.lib.flint_gpt2_moments(
+                    self.handle, i, ctypes.byref(avg), ctypes.byref(avg_sq)
+                )
+            )
+            out.append((avg.name.decode(), avg.data, avg_sq.data, avg.rows, avg.cols))
+        return out
+
+    def optimizer_state_address(self) -> int:
+        """The device address of the model's flint_adamw_state."""
+        state = ctypes.c_void_p()
+        self.flint.check(
+            self.flint.lib.flint_gpt2_optimizer_state(self.handle, ctypes.byref(state))
+        )
+        return state.value
+
+    def read_optimizer_state(self) -> dict:
+        """The optimizer's state as a dict (see read_adamw_state); it synchronizes."""
+        return read_adamw_state(self.optimizer_state_address())
+
+    def write_optimizer_state(self, state: dict, stream=None) -> None:
+        """Copies a state (a dict with read_adamw_state's keys, any of which may be left out
+        for its default) to the model's; it waits for the copy."""
+        source = adamw_state(**state)
+        self.flint.copy(self.optimizer_state_address(), source, 24, stream)
+        torch.cuda.synchronize()
 
     def outputs(self) -> tuple:
         """The device addresses of logits, dlogits and row_loss."""

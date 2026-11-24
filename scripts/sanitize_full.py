@@ -16,13 +16,18 @@ checked there. This script checks them, one process per case:
 --layers overrides every case's layers, and --sequences and --length the batch, for a quick
 run. --backward creates each case's model with backward and runs flint_gpt2_backward after the
 forward pass, then a second forward and backward pass with accumulate, so the tools check both
-modes; the model then keeps every layer's activations, and takes about 14.6 GiB at 12 layers and
-16 x 1,024 against 5.0 GiB without. The child also reads every gradient back and exits nonzero
+modes; the model then keeps every layer's activations, and with AdamW's moments and state (the
+model's optimizer) takes about 15.5 GiB at 12 layers and 16 x 1,024 against 5.0 GiB without. The
+child also reads every gradient back and exits nonzero
 unless all are finite and each parameter's has a nonzero value (wte's padded rows must be exactly
 +0), so a backward pass that ran but computed nothing can't pass. It then runs the model's
 gradient norm (flint_gpt2_gradient_norm) under the tools, and fails unless its count of
 non-finite values is 0 and its norm is finite, positive and within 1e-6 (relative) of the FP64
-norm of the gradients it read back. Each case must
+norm of the gradients it read back. Last it resets the optimizer to a loss scale of 2^16 and
+runs one optimizer step (flint_gpt2_step) under the tools, and fails unless the state is then
+{scale 65536, growth_tracker 1, step 1, skipped 0}, every parameter is finite, wte's padded rows
+are exactly +0 and every parameter differs, bit for bit, from the weights it was loaded with
+(every tensor has a nonzero gradient somewhere, so every tensor must move). Each case must
 report zero errors (racecheck zero warnings too) and a finite loss. It is
 not part of precheck: it takes long, and the server's GPU is shared, so it refuses to start
 while another process uses the GPU or holds its memory, unless --allow-busy is given (the
@@ -96,11 +101,42 @@ def norm_problem(norm, nonfinite, expected):
     return None
 
 
+def optimizer_problems(name, weight, loaded, vocab):
+    """Why a parameter (a torch FP32 tensor, after one optimizer step) isn't what a step that
+    ran gives, as a list of strings: every value must be finite, wte's rows from vocab on (the
+    padded ones, whose gradient and weights are +0) exactly +0, and the weights not bit for bit
+    those it was loaded with, since every tensor has a nonzero gradient somewhere."""
+    import torch
+
+    problems = []
+    if not torch.isfinite(weight).all():
+        problems.append(f"after the step, {name} has a value that is not finite")
+    if name == "wte.weight":
+        padded = weight[vocab:].contiguous().view(torch.int32)
+        if padded.numel() and bool((padded != 0).any()):
+            problems.append(f"after the step, {name} is not +0 in its padded rows")
+    # A bias is 1-D in torch and (1, cols) here.
+    same = torch.equal(weight.reshape(-1).view(torch.int32), loaded.reshape(-1).view(torch.int32))
+    if same:
+        problems.append(f"the step left {name} as it was loaded")
+    return problems
+
+
+def state_problem(state):
+    """Why the optimizer's state (a dict) isn't what one clean step from a loss scale of 2^16
+    leaves, or None."""
+    expected = {"scale": 65536.0, "growth_tracker": 1, "step": 1, "skipped": 0}
+    if state != expected:
+        return f"the optimizer's state after one step is {state}, not {expected}"
+    return None
+
+
 def child(layers, sequences, length, separate, backward):
     """One forward pass of GPT-2 with `layers` layers on random tokens, and with `backward` its
     backward pass, then a second forward and backward pass accumulating, printing the loss. With
     backward it checks every gradient (gradient_problem) and the model's gradient norm
-    (norm_problem), and returns 1, printing why, if one is wrong; otherwise 0."""
+    (norm_problem), then runs one optimizer step and checks it (state_problem,
+    optimizer_problems), and returns 1, printing why, if one is wrong; otherwise 0."""
     sys.path.insert(0, str(ROOT / "tests"))
     import dataclasses
 
@@ -115,6 +151,7 @@ def child(layers, sequences, length, separate, backward):
         layers=cfg.n_layer, heads=cfg.n_head, width=cfg.n_embd, block_size=cfg.block_size,
         vocab=cfg.vocab_size, padded_vocab=cfg.padded_vocab_size, sequences=sequences,
         length=length, separate_buffers=int(separate), backward=int(backward),
+        optimizer=int(backward),
     )  # fmt: skip
     rows = sequences * length
     model = gpt2_torch.build_model(cfg, seed=0, device="cuda")
@@ -148,6 +185,17 @@ def child(layers, sequences, length, separate, backward):
             problem = norm_problem(norm, nonfinite, math.sqrt(squares))
             if problem:
                 problems.append(problem)
+            # One optimizer step from GradScaler's first loss scale, which the gradients carry.
+            m.reset_optimizer(2.0**16)
+            m.step(flint_lib.adamw_config(6e-4))
+            problem = state_problem(m.read_optimizer_state())
+            if problem:
+                problems.append(problem)
+            loaded = dict(model.named_parameters())
+            for name, address, parameter_rows, cols in m.parameters():
+                weight = m.read(address, (parameter_rows, cols), torch.float32)
+                problems += optimizer_problems(name, weight, loaded[name].detach(), cfg.vocab_size)
+                del weight
     torch.cuda.synchronize()
     print(f"{LOSS_LINE}{loss!r}", flush=True)
     for problem in problems:

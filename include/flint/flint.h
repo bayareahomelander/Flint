@@ -468,6 +468,93 @@ FLINT_API flint_status flint_gradient_norm(void* norm, void* nonfinite, const vo
  * partial sums and 1,024 uint64 partial counts), whatever the tensors. */
 FLINT_API flint_status flint_gradient_norm_workspace(size_t* bytes);
 
+/* One master weight for flint_adamw: count FP32 values in each of four arrays in device
+ * memory, the weight, its gradient and AdamW's two moments. decay nonzero applies the weight
+ * decay. */
+typedef struct {
+    void* param;
+    const void* grad;
+    void* exp_avg;
+    void* exp_avg_sq;
+    size_t count;
+    int decay;
+} flint_adamw_tensor;                       /* 48 bytes, on every platform Flint builds for */
+
+/* The state flint_adamw reads and updates, in device memory (24 bytes). */
+typedef struct {
+    float scale;                            /* the loss scale */
+    int growth_tracker;                     /* clean steps in a row since the last growth or skip */
+    long long step;                         /* AdamW's step count: the steps taken, not skipped */
+    long long skipped;                      /* the steps skipped (Flint's own, for logging) */
+} flint_adamw_state;
+
+/* A step's hyperparameters, on the host. */
+typedef struct {
+    double lr;
+    double beta1;
+    double beta2;
+    double eps;
+    double weight_decay;
+    double max_norm;                        /* +inf turns clipping off */
+    long long growth_interval;              /* GradScaler's default is 2,000 */
+} flint_adamw_config;                       /* 56 bytes */
+
+/* One optimizer step, asynchronously on stream, over the tensor_count entries of tensors, a
+ * table of flint_adamw_tensor in device memory. It does what PyTorch 2.6 does with FP16
+ * autocast, scaler.unscale_(optimizer), clip_grad_norm_(parameters, max_norm),
+ * scaler.step(optimizer) and scaler.update(), with a fused AdamW, and never waits on the
+ * host: it reads *norm (one FP64 value) and *nonfinite (one uint64), which flint_gradient_norm
+ * left for the same, still scaled, gradients, and the state, which it updates.
+ *
+ * The step is skipped if *nonfinite is above 0 (GradScaler's found_inf), if the state's scale
+ * isn't finite and positive, if 1 / scale overflows FP32 (GradScaler's inv_scale: a scale of 0
+ * or of about 2^-128 or less), and if the unscaled norm, norm / scale, is 2^127 or more, past
+ * which an unscaled value could overflow FP32. PyTorch 2.6 doesn't skip at those last two: its
+ * unscale_ checks the gradients before it multiplies them, so an overflow there reaches its
+ * step as inf and NaN. Where the unscaled norm is above about 1.8e19, PyTorch's FP32 clip norm
+ * overflows, and with a finite max_norm its step goes ahead with all-zero gradients (with +inf,
+ * NaN ones), while this one's FP64 norm clips as usual.
+ * A skipped step changes no weight, no moment and not the state's step count; it halves the
+ * scale, resets the growth tracker and adds 1 to skipped. A taken step multiplies every
+ * gradient value by clip / scale, rounded to FP32, where the unscaled norm is norm / scale and
+ * clip is max_norm / (unscaled norm + 1e-6), at most 1; no unscaled gradient is ever written.
+ * It then updates the weights and moments as PyTorch's fused AdamW does, with its precisions: the
+ * gradient times that multiplier in FP32, the decay, the moments and the denominator's eps in
+ * FP64, rounded to FP32, the rest in FP32, with the bias corrections from the state's
+ * step count + 1, which it then stores. Finally the loss scale update: the growth tracker
+ * advances, and when it reaches growth_interval the scale doubles, unless that gives inf, and
+ * the tracker resets. The growth and backoff factors are fixed at 2 and 0.5, GradScaler's
+ * defaults. The decay applies where an entry's decay is nonzero and weight_decay isn't 0, even
+ * if lr is 0, as PyTorch's fused kernel does. The learning rate is the caller's, per call.
+ *
+ * The result is deterministic and the same bits on every GPU: every value's arithmetic is
+ * fixed, in explicitly rounded operations, and nothing is summed across values.
+ *
+ * config must be non-null with lr finite and at least 0, beta1 and beta2 from 0 up to but
+ * not including 1, eps finite and above 0, weight_decay finite and at least 0, max_norm above
+ * 0 (+inf is allowed, NaN is not) and growth_interval from 1 to 2,147,483,647. state
+ * (24 bytes), workspace, norm (8), nonfinite (8) and tensors (tensor_count * 48) must be
+ * non-null and 16-byte aligned, and state and workspace must not overlap each other or the
+ * others (the function checks the table's bytes, not the arrays). workspace_bytes must be at
+ * least flint_adamw_workspace's value; the call uses the workspace until the stream has run
+ * it, so calls on other streams need their own.
+ *
+ * The table can't be checked, as flint_gradient_norm's can't: each entry's four pointers
+ * must be 4-byte aligned and hold count FP32 values in device memory (all four 16-byte
+ * aligned reads and writes faster; the bits don't depend on alignment), and no array may
+ * overlap another array of any entry (the gradient may not alias the weight, either) or any
+ * of the function's own buffers. An entry with a count of 0 touches nothing. A state whose
+ * scale isn't finite and positive skips every step (halving a negative scale, and leaving an
+ * infinite or NaN one as it is): flint_gpt2_reset_optimizer and the steps themselves leave only
+ * a positive scale, or 0 after about 166 skips in a row from 2^16. */
+FLINT_API flint_status flint_adamw(const void* tensors, size_t tensor_count, const void* norm,
+                                   const void* nonfinite, void* state,
+                                   const flint_adamw_config* config, void* workspace,
+                                   size_t workspace_bytes, flint_stream stream);
+
+/* The workspace flint_adamw needs, in bytes, in *bytes: a fixed 16, whatever the tensors. */
+FLINT_API flint_status flint_adamw_workspace(size_t* bytes);
+
 /* GPT-2's forward pass, from tokens to logits, each row's loss and the logits'
  * gradient, and its backward pass, from that gradient to every parameter's, through
  * the functions above. A model owns its weights and buffers. */
@@ -487,7 +574,12 @@ typedef struct flint_gpt2 flint_gpt2;
  * memory. Its forward pass gives the same bits. It narrows two limits:
  * sequences * length can be up to 65,536 (the weight gradients' GEMMs sum over the
  * rows), and length * width up to 16,776,960 (the embedding's backward pass). Zero
- * gives the forward-only model. */
+ * gives the forward-only model.
+ *
+ * optimizer nonzero needs backward nonzero, and lets the model run flint_gpt2_step: it adds
+ * AdamW's two FP32 moments per master weight (8 bytes per parameter value, 0.93 GiB for
+ * GPT-2 124M), the table of arrays that flint_adamw reads and the optimizer's state. Zero
+ * gives the model of before, with the same bytes, layout and bits. */
 typedef struct {
     size_t layers;
     size_t heads;
@@ -499,6 +591,7 @@ typedef struct {
     size_t length;
     int separate_buffers;
     int backward;
+    int optimizer;
 } flint_gpt2_config;
 
 /* A master weight: rows x cols FP32 in device memory, row-major and contiguous. A
@@ -524,8 +617,10 @@ FLINT_API flint_status flint_gpt2_bytes(const flint_gpt2_config* config, size_t*
  * With backward, flint_gemm_tn's workspace is sized for the current GPU's SM count,
  * so the backward pass must run on a GPU with the same count: on another,
  * flint_gemm_tn may need more workspace and fail. With backward, flint_gpt2_create also
- * writes the table of gradients that flint_gpt2_gradient_norm reads, and waits for the GPU
- * until the copy has landed. */
+ * writes the table of gradients that flint_gpt2_gradient_norm reads, and with optimizer
+ * the table that flint_gpt2_step reads, and waits for the GPU until the copies have landed.
+ * With optimizer, the moments and the optimizer's state start uninitialized, like the
+ * weights: call flint_gpt2_reset_optimizer before the first step. */
 FLINT_API flint_status flint_gpt2_create(const flint_gpt2_config* config, flint_gpt2** model);
 
 /* Frees a model and its memory. Anything still using them on a stream must have
@@ -614,6 +709,45 @@ FLINT_API flint_status flint_gpt2_gradient_norm(flint_gpt2* model, flint_stream 
 FLINT_API flint_status flint_gpt2_gradient_norm_outputs(const flint_gpt2* model,
                                                         const void** norm,
                                                         const void** nonfinite);
+
+/* Starts the optimizer over, asynchronously on stream: every moment is set to +0, and the
+ * state to {initial_scale, 0, 0, 0}, so the first step is AdamW's first. initial_scale must
+ * be finite and positive (GradScaler's default is 2^16, 65,536). The model must have been
+ * created with optimizer nonzero, or the call fails with FLINT_ERROR_INVALID_ARGUMENT, as
+ * for a null model. These are a memset per moment buffer and a copy of the state from the
+ * host, outside the public API's functions; the copy's source is safe to reuse once the
+ * call returns. */
+FLINT_API flint_status flint_gpt2_reset_optimizer(flint_gpt2* model, float initial_scale,
+                                                  flint_stream stream);
+
+/* One optimizer step over every master weight, asynchronously on stream:
+ * flint_gpt2_gradient_norm, then flint_adamw over the model's weights, gradients and
+ * moments with that norm and count and the model's state, then flint_gpt2_sync_weights, so
+ * that the FP16 copies are current afterwards. Run it after the last micro-batch's
+ * flint_gpt2_backward, on the same stream. config is checked as flint_adamw checks it,
+ * before anything launches. Its lr is the caller's schedule, by iteration; bias correction
+ * uses the state's own step count, which a skipped step doesn't advance. On a skipped step
+ * the weights are unchanged (the sync rewrites the same FP16 values). The call uses the
+ * model's workspace, so it must not run at the same time as another of the model's calls on
+ * a different stream. Fails with FLINT_ERROR_INVALID_ARGUMENT for a null model or one
+ * created without optimizer. */
+FLINT_API flint_status flint_gpt2_step(flint_gpt2* model, const flint_adamw_config* config,
+                                       flint_stream stream);
+
+/* The moments of the index-th master weight: the name, rows and cols of
+ * flint_gpt2_parameter's, with data pointing at the FP32 first moment (exp_avg) and the
+ * second (exp_avg_sq) in device memory. Either pointer may be null, if that moment isn't
+ * wanted. Fails with FLINT_ERROR_INVALID_ARGUMENT for a null model, one created without
+ * optimizer, or an index out of range. */
+FLINT_API flint_status flint_gpt2_moments(const flint_gpt2* model, size_t index,
+                                          flint_gpt2_parameter_info* exp_avg,
+                                          flint_gpt2_parameter_info* exp_avg_sq);
+
+/* Where the model's flint_adamw_state is, in device memory, in *state: a caller may read it
+ * (after the stream has run), or write it to resume a run. Fails with
+ * FLINT_ERROR_INVALID_ARGUMENT for a null model, a null state, or a model created without
+ * optimizer. */
+FLINT_API flint_status flint_gpt2_optimizer_state(const flint_gpt2* model, void** state);
 
 /* Where a forward pass leaves its outputs, in device memory, as
  * flint_softmax_cross_entropy describes them: logits and dlogits (sequences * length)

@@ -1000,10 +1000,13 @@ def test_gradients_are_the_parameters_in_name_order_and_size(flint, name, separa
     assert gradients[0][0] == "wte.weight" and gradients[0][2] == cfg.padded_vocab_size
 
 
-def expected_bytes_backward(flint, layers, heads, width, block_size, vocab, padded_vocab, sequences, length):
+def expected_bytes_backward(
+    flint, layers, heads, width, block_size, vocab, padded_vocab, sequences, length, optimizer=False
+):
     """The device bytes of one allocation of a model with backward, summed in Python: every
     buffer rounded up to 256 bytes, listed by hand from the backward pass's spec, with the two
-    workspaces from the bindings' own size functions."""
+    workspaces from the bindings' own size functions. With optimizer, AdamW's two moments per
+    master weight, its table and its state come too."""
     rows, head_width, batches = sequences * length, width // heads, sequences * heads
     heads_layout = sequences * heads * length * head_width * 2
     scores = batches * length * length * 2
@@ -1035,13 +1038,18 @@ def expected_bytes_backward(flint, layers, heads, width, block_size, vocab, padd
     shared = [flint.bias_gradient_workspace(rows, cols) for cols in (width, 3 * width, 4 * width)]
     shared += [flint.layernorm_backward_workspace(rows, width),
                flint.embedding_backward_workspace(sequences, length, padded_vocab, width),
-               flint.gradient_norm_workspace()]  # fmt: skip
+               flint.gradient_norm_workspace(),
+               flint.adamw_workspace()]  # fmt: skip
     tn = [flint.gemm_tn_workspace(m, n, rows) for m, n in
           ((padded_vocab, width), (3 * width, width), (width, width), (4 * width, width), (width, 4 * width))]  # fmt: skip
     buffers += [max(shared), max(tn)]
     parameter_count = 2 + 12 * layers + 2
     # the gradient norm's table (16 bytes, a flint_tensor, per parameter), its norm and its count
     buffers += [parameter_count * 16, 8, 8]
+    if optimizer:
+        # AdamW's moments, each the size of its master weight, its table (48 bytes, a
+        # flint_adamw_tensor, per parameter) and its state
+        buffers += masters + masters + [parameter_count * 48, 24]
     buffers += [rows * padded_vocab * 2] * 2 + [rows * 4]  # logits, dlogits, row_loss
     return sum(up(b) for b in buffers)
 
@@ -1078,20 +1086,31 @@ def test_bytes_with_backward_equals_an_independent_sum(flint, fields):
 
 @pytest.mark.parametrize("fields", [config_fields(TINY, 2, 32), ODD], ids=["tiny-2x32", "odd"])
 @pytest.mark.parametrize("separate", [False, True], ids=["one-allocation", "separate"])
-def test_buffers_with_backward_lie_inside_the_bytes_and_do_not_overlap(flint, fields, separate):
-    config = Gpt2Config(**fields, separate_buffers=int(separate), backward=1)
-    total = expected_bytes_backward(flint, **fields)
+@pytest.mark.parametrize("optimizer", [False, True], ids=["no-optimizer", "optimizer"])
+def test_buffers_with_backward_lie_inside_the_bytes_and_do_not_overlap(flint, fields, separate, optimizer):
+    config = Gpt2Config(**fields, separate_buffers=int(separate), backward=1, optimizer=int(optimizer))
+    total = expected_bytes_backward(flint, **fields, optimizer=optimizer)
     rows, padded = fields["sequences"] * fields["length"], fields["padded_vocab"]
     with Gpt2(flint, config) as m:
         parameters, gradients = m.parameters(), m.gradients()
         logits_at, dlogits_at, loss_at = m.outputs()
         norm_at, nonfinite_at = m.gradient_norm_outputs()
+        if optimizer:
+            moments, state_at = m.moments(), m.optimizer_state_address()
     regions = [(f"{n}", a, r * c * 4) for n, a, r, c in parameters]
     regions += [(f"gradient of {n}", a, r * c * 4) for n, a, r, c in gradients]
     # The gradient norm's two results, an FP64 and a uint64 of 8 bytes each (its table of the
     # gradients' addresses isn't exposed).
     regions += [("gradient norm", norm_at, 8), ("gradient norm's count of non-finite values", nonfinite_at, 8)]
     assert norm_at % 16 == 0 and nonfinite_at % 16 == 0, "the gradient norm's results aren't 16-byte aligned"
+    if optimizer:
+        # AdamW's two moments of each master weight, and its 24-byte state (its table of
+        # arrays isn't exposed: the sum of the bytes covers it).
+        for n, avg_at, avg_sq_at, r, c in moments:
+            assert avg_at % 16 == 0 and avg_sq_at % 16 == 0, f"the moments of {n} aren't 16-byte aligned"
+            regions += [(f"exp_avg of {n}", avg_at, r * c * 4), (f"exp_avg_sq of {n}", avg_sq_at, r * c * 4)]
+        assert state_at % 16 == 0, "the optimizer's state isn't 16-byte aligned"
+        regions += [("optimizer state", state_at, 24)]
     regions += [("logits", logits_at, rows * padded * 2), ("dlogits", dlogits_at, rows * padded * 2),
                 ("row_loss", loss_at, rows * 4)]  # fmt: skip
     regions.sort(key=lambda r: r[1])
