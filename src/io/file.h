@@ -54,6 +54,12 @@ public:
     // file's own path is deleted again, best effort.
     IoStatus commit(const std::string& final_path);
 
+    // A hint about the whole file for the operating system's page cache, best effort: kRandom says
+    // reads will be random (no readahead), kDropCache asks it to drop the file's cached pages.
+    // Errors are ignored. On Windows it does nothing.
+    enum class Advice { kRandom, kDropCache };
+    void advise(Advice advice) const noexcept;
+
     // Closes the file, if it is open.
     void close();
 

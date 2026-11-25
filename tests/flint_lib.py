@@ -14,6 +14,7 @@ import struct
 import sys
 from pathlib import Path
 
+import numpy as np
 import torch
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -82,6 +83,18 @@ class SafetensorsTensor(ctypes.Structure):
         ("bits", ctypes.c_size_t),
         ("offset", ctypes.c_size_t),
         ("bytes", ctypes.c_size_t),
+    ]
+
+
+class LoaderConfig(ctypes.Structure):
+    """flint_loader_config."""
+
+    _fields_ = [
+        ("length", ctypes.c_size_t),
+        ("max_tokens", ctypes.c_size_t),
+        ("vocab", ctypes.c_size_t),
+        ("seed", ctypes.c_ulonglong),
+        ("shuffle", ctypes.c_int),
     ]
 
 
@@ -544,6 +557,34 @@ SIGNATURES = {
     ),
     "flint_safetensors_commit": (ctypes.c_int, [ctypes.c_void_p]),
     "flint_safetensors_destroy": (None, [ctypes.c_void_p]),
+    "flint_loader_open": (
+        ctypes.c_int,
+        [
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.c_size_t,
+            ctypes.POINTER(LoaderConfig),
+            ctypes.POINTER(ctypes.c_void_p),
+        ],
+    ),
+    "flint_loader_close": (None, [ctypes.c_void_p]),
+    "flint_loader_epoch_sequences": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t)],
+    ),
+    "flint_loader_locate": (
+        ctypes.c_int,
+        [
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_size_t),
+            ctypes.POINTER(ctypes.c_size_t),
+            ctypes.POINTER(ctypes.c_size_t),
+        ],
+    ),
+    "flint_loader_read": (
+        ctypes.c_int,
+        [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_void_p],
+    ),
 }
 
 
@@ -1434,3 +1475,111 @@ def write_safetensors(flint, path, tensors, metadata=(), chunks=None):
                 step += 1
         writer.commit()
         return writer.entries
+
+
+# --- the data loader -------------------------------------------------------------------------
+
+
+def _loader_paths(paths):
+    """The arguments flint_loader_open takes for a list of paths (str, bytes or path-like; None
+    gives a null pointer): (array, keepalive). The array points into the byte strings keepalive
+    holds, so keep both alive for the call."""
+    texts = [None if path is None else _text_bytes(os.fspath(path)) for path in paths]
+    array = (ctypes.c_char_p * max(len(texts), 1))(*texts)
+    return array, texts
+
+
+def _loader_config(length, vocab, seed, shuffle, max_tokens) -> LoaderConfig:
+    return LoaderConfig(length, max_tokens, vocab, seed, int(shuffle))
+
+
+def loader_open_status(
+    flint, paths, *, length, vocab, seed=0, shuffle=True, max_tokens=0
+) -> int:
+    """The status of flint_loader_open; a loader it opens is closed again."""
+    array, keepalive = _loader_paths(paths)
+    config = _loader_config(length, vocab, seed, shuffle, max_tokens)
+    handle = ctypes.c_void_p()
+    status = flint.lib.flint_loader_open(
+        array, len(paths), ctypes.byref(config), ctypes.byref(handle)
+    )
+    del keepalive
+    if status == OK:
+        flint.lib.flint_loader_close(handle)
+    elif handle.value is not None:
+        raise AssertionError("flint_loader_open failed but returned a loader")
+    return status
+
+
+def _buffer_address(buffer):
+    """The address of a buffer for flint_loader_read: None, an int, or an object with one (a
+    numpy array's ctypes.data, a torch tensor's data_ptr())."""
+    if buffer is None or isinstance(buffer, int):
+        return buffer
+    if hasattr(buffer, "ctypes"):
+        return buffer.ctypes.data
+    return buffer.data_ptr()
+
+
+class Loader:
+    """A flint_loader, closed by close() or on leaving a with block. Opening raises FlintError
+    (with the status) when the library refuses the files."""
+
+    def __init__(
+        self, flint: Flint, paths, length, vocab, seed=0, shuffle=True, max_tokens=0
+    ):
+        self.flint = flint
+        self.paths = [os.fspath(p) for p in paths]
+        self.length = length
+        array, keepalive = _loader_paths(self.paths)
+        config = _loader_config(length, vocab, seed, shuffle, max_tokens)
+        handle = ctypes.c_void_p()
+        status = flint.lib.flint_loader_open(
+            array, len(self.paths), ctypes.byref(config), ctypes.byref(handle)
+        )
+        del keepalive
+        flint.check(status)
+        self.handle = handle.value
+
+    def close(self) -> None:
+        if self.handle is not None:
+            self.flint.lib.flint_loader_close(self.handle)
+            self.handle = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def epoch_sequences(self) -> int:
+        sequences = ctypes.c_size_t()
+        self.flint.check(
+            self.flint.lib.flint_loader_epoch_sequences(self.handle, ctypes.byref(sequences))
+        )
+        return sequences.value
+
+    def locate(self, index: int) -> tuple:
+        """(epoch, file, sequence) of sequence number index."""
+        epoch, file, sequence = ctypes.c_size_t(), ctypes.c_size_t(), ctypes.c_size_t()
+        self.flint.check(
+            self.flint.lib.flint_loader_locate(
+                self.handle, index, ctypes.byref(epoch), ctypes.byref(file),
+                ctypes.byref(sequence),
+            )
+        )
+        return epoch.value, file.value, sequence.value
+
+    def read_into(self, index: int, count: int, tokens, targets) -> int:
+        """flint_loader_read without raising: the raw status. tokens and targets are numpy arrays
+        (or anything with an address), or None for a null pointer."""
+        return self.flint.lib.flint_loader_read(
+            self.handle, index, count, _buffer_address(tokens), _buffer_address(targets)
+        )
+
+    def read(self, index: int, count: int) -> tuple:
+        """(tokens, targets), numpy uint16 arrays of shape (count, length)."""
+        tokens = np.empty((count, self.length), dtype=np.uint16)
+        targets = np.empty((count, self.length), dtype=np.uint16)
+        self.flint.check(self.read_into(index, count, tokens, targets))
+        return tokens, targets

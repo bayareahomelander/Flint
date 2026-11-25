@@ -906,6 +906,80 @@ FLINT_API flint_status flint_safetensors_commit(flint_safetensors_writer* writer
  * effort, ignoring errors; path itself is never touched. A null writer does nothing. */
 FLINT_API void flint_safetensors_destroy(flint_safetensors_writer* writer);
 
+/* Token files and the data loader, on the host, with no GPU involved.
+ *
+ * A token file is what scripts/fineweb.py writes, all little-endian: a 64-byte header (bytes
+ * 0-7 the magic "FLINTTOK", 8-11 a uint32 version of 1, 12-15 a uint32 tokenizer id of 1, 16-23
+ * a uint64 token count, 24-63 zero), then the tokens as uint16. Its size is exactly 64 + 2 x the
+ * count.
+ *
+ * A loader reads sequences of length + 1 tokens from a list of token files. A file's usable
+ * tokens are its count, or its first max_tokens when max_tokens is nonzero, and it holds
+ * (usable - 1) / length sequences (none when it has no tokens): sequence s is its tokens s *
+ * length to s * length + length, so sequences overlap by one token and never cross files. A
+ * sequence's first length tokens are the inputs and its last length the targets.
+ *
+ * An epoch is every sequence of every file once. With shuffle nonzero, each epoch takes the files
+ * in a seeded order and each file's sequences in a seeded order, by Fisher-Yates on SplitMix64,
+ * each permutation from its own stream keyed by (seed, epoch, file): the arithmetic is integer
+ * only, so it is the same on every machine. With shuffle zero, files and sequences come in order.
+ * Epochs follow one another without end. Index g, counting sequences from the start, is in epoch
+ * g / E, for E sequences per epoch, and a read of index g gives the same tokens however it was
+ * reached, so a run that saves the next index (with the seed and the config) and reads from it
+ * again resumes bit for bit, at any micro-batch size.
+ *
+ * The loader keeps its files open until flint_loader_close; on Windows nobody can write them
+ * meanwhile. On Linux it advises the page cache that reads are random, and to drop a file's pages
+ * once a read moves on to another file, and at close, so it holds about one file of cache. Paths
+ * are UTF-8 (on Windows a path that isn't is FLINT_ERROR_INVALID_ARGUMENT) and may not be empty.
+ * A null pointer argument is FLINT_ERROR_INVALID_ARGUMENT. A loader is used by one thread at a
+ * time. */
+
+typedef struct flint_loader flint_loader;
+
+/* What a loader reads. length is from 1 to 65,536 and vocab from 1 to 65,536; seed is used only
+ * with shuffle nonzero. */
+typedef struct {
+    size_t length;           /* tokens per sequence's inputs, and per its targets */
+    size_t max_tokens;       /* use only each file's first max_tokens tokens; 0 for all */
+    size_t vocab;            /* every token read must be below it */
+    unsigned long long seed;
+    int shuffle;
+} flint_loader_config;
+
+/* Opens files token files (from 1 to 65,536) and checks every header and size before it
+ * returns, keeping the files open. A file that can't be opened is FLINT_ERROR_IO; one that isn't
+ * a valid token file is FLINT_ERROR_FORMAT, and so is one with 2^32 or more sequences; with
+ * shuffle nonzero, a file with more than 2^26 (67,108,864) sequences is
+ * FLINT_ERROR_INVALID_ARGUMENT, since its permutation would take more than 256 MiB; if no file
+ * holds a sequence, it is FLINT_ERROR_INVALID_ARGUMENT. *loader is null on failure. */
+FLINT_API flint_status flint_loader_open(const char* const* paths, size_t files,
+                                         const flint_loader_config* config,
+                                         flint_loader** loader);
+
+/* Closes a loader and its files. A null loader does nothing. */
+FLINT_API void flint_loader_close(flint_loader* loader);
+
+/* The sequences in one epoch, in *sequences. */
+FLINT_API flint_status flint_loader_epoch_sequences(const flint_loader* loader,
+                                                    size_t* sequences);
+
+/* Where index falls: its epoch, the file (its place in open's list) and the sequence within the
+ * file (its tokens start at token sequence * length). */
+FLINT_API flint_status flint_loader_locate(flint_loader* loader, size_t index, size_t* epoch,
+                                           size_t* file, size_t* sequence);
+
+/* Reads count sequences from index on: tokens and targets each receive count x length uint16
+ * values in host memory, sequence after sequence (row r = i * length + t holds token t of the
+ * i-th sequence, and its target, token t + 1), the layout flint_gpt2_forward takes. Both must be
+ * 2-byte aligned and must not overlap, and index + count must not overflow. A count of 0 reads
+ * nothing. A token at or above vocab is FLINT_ERROR_FORMAT, naming the file, the token's place
+ * in it and its value; a failed read leaves the outputs unspecified and the loader usable. With
+ * shuffle nonzero a read keeps a permutation of the file it reads, 4 bytes per sequence, 256 MiB
+ * at most. */
+FLINT_API flint_status flint_loader_read(flint_loader* loader, size_t index, size_t count,
+                                         void* tokens, void* targets);
+
 #ifdef __cplusplus
 }
 #endif

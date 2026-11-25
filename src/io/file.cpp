@@ -432,6 +432,20 @@ void File::close() {
 
 #endif
 
+void File::advise(Advice advice) const noexcept {
+#if defined(_WIN32)
+    (void)advice;
+#else
+    if (handle_ == kClosed) {
+        return;
+    }
+    // posix_fadvise returns the error number instead of setting errno; a hint that fails is
+    // ignored.
+    const int hint = advice == Advice::kRandom ? POSIX_FADV_RANDOM : POSIX_FADV_DONTNEED;
+    (void)::posix_fadvise(static_cast<int>(handle_), 0, 0, hint);
+#endif
+}
+
 void File::discard() noexcept {
     close();
     remove_path(path_);

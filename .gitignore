@@ -11,7 +11,7 @@ build/
 build-*/
 
 # Data, checkpoints, and profiler reports stay out of git
-data/
+/data/
 checkpoints/
 *.nsys-rep
 *.ncu-rep
